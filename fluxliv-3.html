@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluxLiv — Gestion Factures, Stock &amp; Livraisons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<style>
+:root{
+  --bg: #12161C;
+  --panel: #1A2029;
+  --panel-2: #202834;
+  --line: #2B3441;
+  --ink: #EDEFF2;
+  --ink-dim: #9AA4B2;
+  --ink-faint: #667080;
+  --accent: #4E8FB5;
+  --accent-soft: rgba(78,143,181,.15);
+  --amber: #D9924F;
+  --amber-soft: rgba(217,146,79,.15);
+  --red: #C4553A;
+  --red-soft: rgba(196,85,58,.15);
+  --green: #5E9468;
+  --green-soft: rgba(94,148,104,.15);
+  --radius: 8px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+body{font-size:14px;line-height:1.5;}
+::selection{background:var(--accent-soft);}
+.mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;font-size:14px;}
+a{color:inherit;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+#root{min-height:100vh;}
+
+.app-shell{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:width .18s ease;}
+.sidebar.collapsed{width:64px;}
+.sb-brand{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid var(--line);}
+.sb-brand-mark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#2E5A76);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-size:14px;color:#fff;}
+.sb-brand-text{font-weight:700;font-size:15px;letter-spacing:.2px;white-space:nowrap;overflow:hidden;}
+.sb-brand-sub{font-size:11px;color:var(--ink-faint);white-space:nowrap;}
+.sidebar.collapsed .sb-brand-text, .sidebar.collapsed .sb-brand-sub{display:none;}
+.sb-nav{flex:1;overflow-y:auto;padding:10px 8px;}
+.sb-section-label{font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;padding:14px 10px 6px;}
+.sidebar.collapsed .sb-section-label{display:none;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;color:var(--ink-dim);text-decoration:none;font-size:13.5px;font-weight:500;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;white-space:nowrap;overflow:hidden;}
+.sb-item svg{flex-shrink:0;width:17px;height:17px;}
+.sb-item:hover{background:var(--panel-2);color:var(--ink);}
+.sb-item.active{background:var(--accent-soft);color:var(--accent);}
+.sidebar.collapsed .sb-item span{display:none;}
+.sb-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:20px;}
+.sidebar.collapsed .sb-badge{display:none;}
+.sb-foot{padding:10px;border-top:1px solid var(--line);}
+.sb-collapse-btn{width:100%;display:flex;align-items:center;justify-content:center;padding:8px;border-radius:7px;background:var(--panel-2);border:none;color:var(--ink-faint);}
+
+/* MAIN */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;padding:12px 22px;background:rgba(18,22,28,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+.topbar h1{font-size:16px;font-weight:700;margin:0;}
+.topbar .sub{font-size:12px;color:var(--ink-faint);}
+.search-box{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 10px;color:var(--ink-faint);}
+.search-box input{flex:1;background:none;border:none;outline:none;color:var(--ink);font-size:13px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.role-pill{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:5px 12px 5px 6px;}
+.role-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.role-select{background:none;border:none;color:var(--ink);font-size:12.5px;font-weight:600;outline:none;}
+.role-select option{background:var(--panel-2);color:var(--ink);}
+
+.content{padding:20px 22px 60px;max-width:1400px;width:100%;margin:0 auto;}
+
+/* Generic */
+.grid{display:grid;gap:14px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+.card-title{font-size:13px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;justify-content:space-between;}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;}
+.kpi-label{font-size:11.5px;color:var(--ink-faint);font-weight:600;margin-bottom:6px;}
+.kpi-value{font-size:26px;font-weight:800;font-family:'IBM Plex Mono',monospace;}
+.kpi-value.small{font-size:20px;}
+.kpi-accent{position:absolute;left:0;top:0;bottom:0;width:3px;}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;color:var(--ink-faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr.row-hover:hover{background:var(--panel-2);}
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--line);}
+.table-wrap table{border:none;}
+.table-wrap .table-wrap{border:none;}
+
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.badge-dot{width:6px;height:6px;border-radius:50%;}
+.badge.b-blue{background:var(--accent-soft);color:var(--accent);}
+.badge.b-amber{background:var(--amber-soft);color:var(--amber);}
+.badge.b-red{background:var(--red-soft);color:var(--red);}
+.badge.b-green{background:var(--green-soft);color:var(--green);}
+.badge.b-gray{background:var(--panel-2);color:var(--ink-dim);}
+
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:8px 14px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);}
+.btn:hover{border-color:var(--ink-faint);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{background:#5A9CC2;}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff;}
+.btn.ghost{background:none;border:none;color:var(--ink-dim);}
+.btn.sm{padding:5px 10px;font-size:12px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.field label{font-size:12px;color:var(--ink-dim);font-weight:600;}
+.field input,.field select,.field textarea{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:9px 10px;color:var(--ink);outline:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(10,12,16,.65);display:flex;align-items:flex-start;justify-content:center;z-index:50;overflow-y:auto;padding:40px 16px;}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:100%;max-width:640px;padding:22px;}
+.modal-head{display:flex;align-items:center;justify-content:between;margin-bottom:14px;}
+.modal-head h3{margin:0;font-size:16px;}
+.modal-close{margin-left:auto;background:none;border:none;color:var(--ink-faint);font-size:18px;}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--ink-faint);}
+.empty-state svg{opacity:.4;margin-bottom:10px;}
+
+.timeline{position:relative;padding-left:22px;}
+.timeline::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--line);}
+.timeline-item{position:relative;padding-bottom:18px;}
+.timeline-item::before{content:'';position:absolute;left:-22px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);}
+.timeline-item.pending::before{background:var(--ink-faint);}
+.timeline-item .t-title{font-weight:700;font-size:13px;}
+.timeline-item .t-meta{font-size:11.5px;color:var(--ink-faint);margin-top:2px;}
+.timeline-item .t-note{font-size:12.5px;color:var(--ink-dim);margin-top:4px;}
+
+.alert{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:7px;font-size:12.5px;margin-bottom:12px;border:1px solid;}
+.alert.warn{background:var(--amber-soft);border-color:rgba(217,146,79,.35);color:#EAB877;}
+.alert.error{background:var(--red-soft);border-color:rgba(196,85,58,.35);color:#E08672;}
+.alert.info{background:var(--accent-soft);border-color:rgba(78,143,181,.35);color:#89C0E0;}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto;}
+.tab{padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink-faint);border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent);}
+
+.section-title{font-size:18px;font-weight:800;margin:0 0 4px;}
+.section-sub{font-size:12.5px;color:var(--ink-faint);margin:0 0 18px;}
+
+.chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.chip{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);}
+.chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+
+.progress-track{height:6px;background:var(--panel-2);border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);}
+
+.stat-line{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line);}
+.stat-line:last-child{border-bottom:none;}
+.stat-line .lbl{color:var(--ink-faint);}
+.stat-line .val{font-weight:700;font-family:'IBM Plex Mono',monospace;}
+
+@media (max-width: 860px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:40;transform:translateX(-100%);}
+  .sidebar.mobile-open{transform:translateX(0);}
+  .field-row{grid-template-columns:1fr;}
+  .content{padding:14px;}
+  .topbar{padding:10px 14px;}
+  .search-box{display:none;}
+}
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="boot-msg" style="padding:60px 24px;text-align:center;color:#9AA4B2;font-family:system-ui,sans-serif;">
+    Chargement de FluxLiv…
+  </div>
+</div>
+<script>
+  // Filet de sécurité : si React n'a pas pu se charger (connexion internet
+  // instable ou CDN bloqué), on affiche un message clair au lieu d'un écran vide.
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      if(typeof React === 'undefined' || typeof ReactDOM === 'undefined'){
+        document.getElementById('root').innerHTML =
+          '<div style="max-width:520px;margin:60px auto;padding:24px;font-family:system-ui,sans-serif;color:#EDEFF2;background:#1A2029;border:1px solid #2B3441;border-radius:10px;">' +
+          '<h2 style="margin-top:0;">Impossible de charger l\'application</h2>' +
+          '<p style="color:#9AA4B2;font-size:14px;line-height:1.6;">FluxLiv a besoin d\'internet pour charger ses composants (React) au premier lancement. ' +
+          'Vérifiez votre connexion, puis rechargez la page. Si le problème persiste, essayez un autre navigateur ou réseau.</p>' +
+          '</div>';
+      }
+    }, 4000);
+  });
+</script>
+<script>
+(() => {
+  const { useState, useEffect, useMemo, useCallback, useRef } = React;
+  const Icon = ({ name, size = 17, style }) => {
+    const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", style };
+    const paths = {
+      dashboard: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("rect", { x: "3", y: "3", width: "7", height: "9", rx: "1.5" }), /* @__PURE__ */ React.createElement("rect", { x: "14", y: "3", width: "7", height: "5", rx: "1.5" }), /* @__PURE__ */ React.createElement("rect", { x: "14", y: "12", width: "7", height: "9", rx: "1.5" }), /* @__PURE__ */ React.createElement("rect", { x: "3", y: "16", width: "7", height: "5", rx: "1.5" })),
+      truck: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M1 8h13v8H1z" }), /* @__PURE__ */ React.createElement("path", { d: "M14 11h4l4 3v2h-8" }), /* @__PURE__ */ React.createElement("circle", { cx: "5.5", cy: "19", r: "1.8" }), /* @__PURE__ */ React.createElement("circle", { cx: "17.5", cy: "19", r: "1.8" })),
+      order: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M9 2h6l1 4H8z" }), /* @__PURE__ */ React.createElement("path", { d: "M4 6h16l-1.2 13a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z" }), /* @__PURE__ */ React.createElement("path", { d: "M9 11h6M9 15h6" })),
+      invoice: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M6 2h9l3 3v17H6z" }), /* @__PURE__ */ React.createElement("path", { d: "M15 2v3h3" }), /* @__PURE__ */ React.createElement("path", { d: "M9 11h6M9 15h6M9 7h3" })),
+      warehouse: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M3 21V9l9-5 9 5v12" }), /* @__PURE__ */ React.createElement("path", { d: "M3 9l9 5 9-5" }), /* @__PURE__ */ React.createElement("path", { d: "M9 21v-7h6v7" })),
+      loading: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M3 3h12v13H3z" }), /* @__PURE__ */ React.createElement("path", { d: "M15 8h4l3 3v5h-7" }), /* @__PURE__ */ React.createElement("circle", { cx: "7", cy: "19", r: "1.8" }), /* @__PURE__ */ React.createElement("circle", { cx: "18", cy: "19", r: "1.8" }), /* @__PURE__ */ React.createElement("path", { d: "M6 8h6" })),
+      delivery: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M4 15V6a1 1 0 0 1 1-1h9v10" }), /* @__PURE__ */ React.createElement("path", { d: "M14 8h4l3 3v4h-7" }), /* @__PURE__ */ React.createElement("circle", { cx: "7.5", cy: "18", r: "1.8" }), /* @__PURE__ */ React.createElement("circle", { cx: "18", cy: "18", r: "1.8" })),
+      return: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M3 12a9 9 0 1 0 3-6.7" }), /* @__PURE__ */ React.createElement("path", { d: "M3 3v5h5" })),
+      certify: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M12 2l3 2 3.5-.5.5 3.5 2 3-2 3-.5 3.5-3.5-.5-3 2-3-2-3.5.5-.5-3.5-2-3 2-3 .5-3.5L9 4z" }), /* @__PURE__ */ React.createElement("path", { d: "M9.5 12l2 2 3.5-3.5" })),
+      stock: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M21 8l-9-5-9 5 9 5 9-5z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 8v8l9 5 9-5V8" }), /* @__PURE__ */ React.createElement("path", { d: "M12 13v8" })),
+      users: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "9", cy: "8", r: "3.2" }), /* @__PURE__ */ React.createElement("path", { d: "M2.5 20a6.5 6.5 0 0 1 13 0" }), /* @__PURE__ */ React.createElement("circle", { cx: "18", cy: "9", r: "2.6" }), /* @__PURE__ */ React.createElement("path", { d: "M15.5 14.2A5 5 0 0 1 21.5 19" })),
+      audit: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M9 3h9v18H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3z" }), /* @__PURE__ */ React.createElement("path", { d: "M9 3v4h6" }), /* @__PURE__ */ React.createElement("path", { d: "M8 12h6M8 16h4" })),
+      search: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "10.5", cy: "10.5", r: "7" }), /* @__PURE__ */ React.createElement("path", { d: "M21 21l-5.2-5.2" })),
+      plus: /* @__PURE__ */ React.createElement("path", { d: "M12 5v14M5 12h14" }),
+      chevronRight: /* @__PURE__ */ React.createElement("path", { d: "M9 6l6 6-6 6" }),
+      chevronDown: /* @__PURE__ */ React.createElement("path", { d: "M6 9l6 6 6-6" }),
+      x: /* @__PURE__ */ React.createElement("path", { d: "M18 6L6 18M6 6l12 12" }),
+      check: /* @__PURE__ */ React.createElement("path", { d: "M20 6L9 17l-5-5" }),
+      alert: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M12 2L1 21h22z" }), /* @__PURE__ */ React.createElement("path", { d: "M12 9v5M12 17h.01" })),
+      file: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M7 2h7l5 5v15H7z" }), /* @__PURE__ */ React.createElement("path", { d: "M14 2v5h5" })),
+      phone: /* @__PURE__ */ React.createElement("path", { d: "M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.2 4.2 2 2 0 0 1 4.2 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .6 3a2 2 0 0 1-.5 2L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2-.5c1 .3 2 .5 3 .6a2 2 0 0 1 1.7 2z" }),
+      menu: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M3 6h18M3 12h18M3 18h18" })),
+      lock: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("rect", { x: "4", y: "10", width: "16", height: "11", rx: "2" }), /* @__PURE__ */ React.createElement("path", { d: "M8 10V7a4 4 0 0 1 8 0v3" })),
+      printer: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M6 9V2h12v7" }), /* @__PURE__ */ React.createElement("rect", { x: "4", y: "9", width: "16", height: "8", rx: "1.5" }), /* @__PURE__ */ React.createElement("path", { d: "M6 17v5h12v-5" })),
+      building: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("rect", { x: "4", y: "3", width: "16", height: "18", rx: "1" }), /* @__PURE__ */ React.createElement("path", { d: "M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1" }), /* @__PURE__ */ React.createElement("path", { d: "M9 21v-4h6v4" })),
+      whatsapp: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M17 14c-.3-.2-1.8-.9-2-1s-.5-.1-.7.2-.7 1-.9 1.1-.3.2-.6 0a7.5 7.5 0 0 1-2.2-1.4 8.4 8.4 0 0 1-1.5-1.9c-.2-.3 0-.5.1-.6l.4-.5.2-.4c.1-.1 0-.3 0-.4L9 7c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-1 2.3c0 1.3 1 2.6 1.1 2.8.1.2 2 3 4.7 4.2a13 13 0 0 0 2 .7c.9.3 1.7.2 2.3.1.7-.1 1.9-.8 2.2-1.6s.3-1.4.2-1.6-.3-.2-.6-.4z" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2a10 10 0 0 0-8.5 15.3L2 22l4.9-1.3A10 10 0 1 0 12 2z" })),
+      package: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M21 8l-9-5-9 5 9 5 9-5z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 8v8l9 5 9-5V8" }), /* @__PURE__ */ React.createElement("path", { d: "M12 13V21" }), /* @__PURE__ */ React.createElement("path", { d: "M3 8l9 5 9-5" })),
+      clock: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "9" }), /* @__PURE__ */ React.createElement("path", { d: "M12 7v5l3 3" })),
+      layers: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M12 2l9 5-9 5-9-5 9-5z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 12l9 5 9-5" }), /* @__PURE__ */ React.createElement("path", { d: "M3 17l9 5 9-5" })),
+      edit: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M12 20h9" }), /* @__PURE__ */ React.createElement("path", { d: "M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" }))
+    };
+    return /* @__PURE__ */ React.createElement("svg", { ...p }, paths[name] || null);
+  };
+  const uid = (prefix) => prefix + "-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+  const fmtDateTime = (d) => {
+    const dt = new Date(d);
+    return dt.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " " + dt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  };
+  const fmtDate = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+  const fmtMoney = (n) => (n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " HTG";
+  const isToday = (d) => {
+    const a = new Date(d), b = /* @__PURE__ */ new Date();
+    return a.toDateString() === b.toDateString();
+  };
+  const FACTURE_STATUTS = {
+    BROUILLON: { label: "Commande cr\xE9\xE9e", color: "gray" },
+    EN_VALIDATION: { label: "En attente de validation", color: "amber" },
+    BLOQUEE_LIMITE: { label: "Bloqu\xE9e \u2014 limite client", color: "red" },
+    BLOQUEE_STOCK: { label: "Bloqu\xE9e \u2014 stock insuffisant", color: "red" },
+    BLOQUEE_COMPTABLE: { label: "Bloqu\xE9e \u2014 stock non valid\xE9", color: "red" },
+    VALIDEE: { label: "Valid\xE9e", color: "blue" },
+    GENEREE: { label: "Facture g\xE9n\xE9r\xE9e", color: "blue" },
+    IMPRIMEE: { label: "Facture imprim\xE9e", color: "blue" },
+    ATTENTE_CHARGEMENT: { label: "En attente de chargement", color: "amber" },
+    EN_CHARGEMENT: { label: "En chargement", color: "amber" },
+    CHARGEE: { label: "Charg\xE9e", color: "blue" },
+    EN_LIVRAISON: { label: "En livraison", color: "amber" },
+    LIVREE_PARTIELLE: { label: "Livraison partielle", color: "amber" },
+    LIVREE_COMPLETE: { label: "Livraison compl\xE8te", color: "green" },
+    ATTENTE_CERTIFICATION: { label: "En attente de certification", color: "amber" },
+    CERTIFIEE: { label: "Certifi\xE9e", color: "green" },
+    REJETEE: { label: "Rejet\xE9e / \xE0 corriger", color: "red" }
+  };
+  const ROLES = {
+    ADMIN: { label: "Administrateur", color: "#D9924F" },
+    CHEF_DEPOT: { label: "Chef de d\xE9p\xF4t", color: "#4E8FB5" },
+    ASSISTANT: { label: "Assistant de d\xE9p\xF4t", color: "#5E9468" },
+    RESP_FACTURES: { label: "Responsable Factures", color: "#B586C9" }
+  };
+  const PERMISSIONS = {
+    ADMIN: ["*"],
+    CHEF_DEPOT: ["stock.create_entry", "stock.view_own", "commande.create", "facture.view", "chargement.confirm", "livraison.confirm", "retour.create", "assistants.manage", "chauffeur.manage"],
+    ASSISTANT: ["commande.create", "facture.view", "chargement.confirm", "livraison.confirm", "retour.create", "chauffeur.manage"],
+    RESP_FACTURES: ["commande.create", "facture.create", "facture.print", "facture.register", "chauffeur.manage", "certification.send"]
+  };
+  const can = (role, perm) => PERMISSIONS[role]?.includes("*") || PERMISSIONS[role]?.includes(perm);
+  function seedData() {
+    const depots = [
+      { id: "DEP-1", nom: "D\xE9p\xF4t Nord", responsable: "Jean Beauvoir", actif: true },
+      { id: "DEP-2", nom: "D\xE9p\xF4t Sud", responsable: "Marie Ostine", actif: true }
+    ];
+    const produits = [
+      { id: "PRD-1", nom: "Riz 25kg", sku: "RIZ-25", unite: "sac", prix: 1450, seuilBas: 40 },
+      { id: "PRD-2", nom: "Huile v\xE9g\xE9tale 1G", sku: "HUI-1G", unite: "gallon", prix: 820, seuilBas: 60 },
+      { id: "PRD-3", nom: "Farine de bl\xE9 50kg", sku: "FAR-50", unite: "sac", prix: 2100, seuilBas: 25 },
+      { id: "PRD-4", nom: "Sucre 50kg", sku: "SUC-50", unite: "sac", prix: 1980, seuilBas: 30 },
+      { id: "PRD-5", nom: "Lait en poudre 25kg", sku: "LAI-25", unite: "sac", prix: 3200, seuilBas: 15 }
+    ];
+    const stocks = [];
+    depots.forEach((dep) => {
+      produits.forEach((p) => {
+        const physique = Math.floor(80 + Math.random() * 220);
+        const reserve = Math.floor(Math.random() * 30);
+        stocks.push({ id: uid("STK"), depotId: dep.id, produitId: p.id, quantitePhysique: physique, quantiteReservee: reserve, quantiteValidee: physique });
+      });
+    });
+    const clients = [
+      { id: "CLI-1", nom: "Supermarch\xE9 Delmas 33", telephone: "509-3811-2245", adresse: "Delmas 33, Port-au-Prince", limiteCredit: 5e5, soldeActuel: 12e4, statut: "actif" },
+      { id: "CLI-2", nom: "Quincaillerie La Union", telephone: "509-4722-9081", adresse: "Croix-des-Bouquets", limiteCredit: 25e4, soldeActuel: 24e4, statut: "actif" },
+      { id: "CLI-3", nom: "Boutique S\u0153ur Anne", telephone: "509-3699-0012", adresse: "P\xE9tion-Ville", limiteCredit: 8e4, soldeActuel: 15e3, statut: "actif" },
+      { id: "CLI-4", nom: "Distributeur Cap Fret", telephone: "509-3200-4471", adresse: "Cap-Ha\xEFtien", limiteCredit: 6e5, soldeActuel: 59e4, statut: "actif" }
+    ];
+    const chauffeurs = [
+      { id: "CHF-1", nom: "Wilner Joseph", telephone: "509-4411-2098", vehicule: "Camion 10 tonnes", plaque: "PP-4421-AB", clientAssocie: "CLI-1", statut: "actif", document: { type: "CIN", numero: "001-234567-8", dateImport: "2025-11-02" }, dateEnregistrement: "2025-11-02", historique: 12 },
+      { id: "CHF-2", nom: "Rodrigue Ambroise", telephone: "509-3391-7723", vehicule: "Camionnette", plaque: "GD-1187-CT", clientAssocie: "CLI-2", statut: "actif", document: { type: "Permis", numero: "PC-889021", dateImport: "2025-09-15" }, dateEnregistrement: "2025-09-15", historique: 31 },
+      { id: "CHF-3", nom: "Marckenson Pierre", telephone: "509-4855-0034", vehicule: "Camion 5 tonnes", plaque: "NP-7752-XZ", clientAssocie: null, statut: "actif", document: { type: "CIN", numero: "004-119832-1", dateImport: "2026-01-20" }, dateEnregistrement: "2026-01-20", historique: 5 }
+    ];
+    const users = [
+      { id: "USR-1", nom: "Sophonie Admin", role: "ADMIN", depotId: null, actif: true },
+      { id: "USR-2", nom: "Jean Beauvoir", role: "CHEF_DEPOT", depotId: "DEP-1", actif: true },
+      { id: "USR-3", nom: "Marie Ostine", role: "CHEF_DEPOT", depotId: "DEP-2", actif: true },
+      { id: "USR-4", nom: "Ketia Assistant", role: "ASSISTANT", depotId: "DEP-1", actif: true },
+      { id: "USR-5", nom: "Frantzy Factures", role: "RESP_FACTURES", depotId: null, actif: true }
+    ];
+    const commandes = [];
+    const factures = [];
+    const auditLogs = [];
+    const retours = [];
+    function pushAudit(entite, entiteId, action, utilisateur, details) {
+      auditLogs.unshift({ id: uid("AUD"), entite, entiteId, action, utilisateur, details: details || "", date: new Date(Date.now() - Math.random() * 1e3 * 60 * 60 * 24 * 6).toISOString() });
+    }
+    const histStatuts = ["CERTIFIEE", "CERTIFIEE", "LIVREE_COMPLETE", "ATTENTE_CERTIFICATION", "LIVREE_PARTIELLE", "EN_LIVRAISON", "CHARGEE", "ATTENTE_CHARGEMENT", "IMPRIMEE"];
+    for (let i = 0; i < 9; i++) {
+      const cli = clients[i % clients.length];
+      const chf = chauffeurs[i % chauffeurs.length];
+      const dep = depots[i % depots.length];
+      const p = produits[i % produits.length];
+      const qte = 20 + Math.floor(Math.random() * 60);
+      const dateBase = new Date(Date.now() - (i + 1) * 1e3 * 60 * 60 * (6 + Math.random() * 40));
+      const cmdId = uid("CMD");
+      const numCmd = "CMD-" + (1e3 + i);
+      commandes.push({ id: cmdId, numero: numCmd, date: dateBase.toISOString(), clientId: cli.id, chauffeurId: chf.id, depotId: dep.id, items: [{ produitId: p.id, quantite: qte }], observations: "", utilisateur: "Frantzy Factures", statut: "FACTUREE" });
+      const st = histStatuts[i % histStatuts.length];
+      const qteLivree = st === "LIVREE_PARTIELLE" ? Math.floor(qte * 0.7) : ["LIVREE_COMPLETE", "ATTENTE_CERTIFICATION", "CERTIFIEE"].includes(st) ? qte : 0;
+      const qteChargee = ["CHARGEE", "EN_LIVRAISON", "LIVREE_PARTIELLE", "LIVREE_COMPLETE", "ATTENTE_CERTIFICATION", "CERTIFIEE"].includes(st) ? qte : 0;
+      const factId = uid("FAC");
+      const numFac = "FAC-" + (5e3 + i);
+      factures.push({
+        id: factId,
+        numero: numFac,
+        date: dateBase.toISOString(),
+        clientId: cli.id,
+        chauffeurId: chf.id,
+        depotId: dep.id,
+        commandeId: cmdId,
+        statut: st,
+        items: [{ produitId: p.id, quantiteFacturee: qte, quantiteChargee: qteChargee, quantiteLivree: qteLivree, quantiteRetournee: st === "LIVREE_PARTIELLE" ? qte - qteLivree : 0, prix: p.prix, montant: qte * p.prix }],
+        montantTotal: qte * p.prix,
+        utilisateur: "Frantzy Factures",
+        timeline: buildHistTimeline(st, dateBase)
+      });
+      if (st === "LIVREE_PARTIELLE") {
+        retours.push({ id: uid("RET"), factureId: factId, produitId: p.id, quantite: qte - qteLivree, motif: "Marchandise endommag\xE9e en transit", depotId: dep.id, utilisateur: "Ketia Assistant", date: new Date(dateBase.getTime() + 1e3 * 60 * 60 * 3).toISOString() });
+      }
+      pushAudit("Facture", numFac, "Cr\xE9ation", "Frantzy Factures", `Facture ${numFac} cr\xE9\xE9e pour ${cli.nom}`);
+    }
+    function buildHistTimeline(finalStatus, baseDate) {
+      const seq = ["BROUILLON", "VALIDEE", "GENEREE", "IMPRIMEE", "ATTENTE_CHARGEMENT", "EN_CHARGEMENT", "CHARGEE", "EN_LIVRAISON", "LIVREE_PARTIELLE", "LIVREE_COMPLETE", "ATTENTE_CERTIFICATION", "CERTIFIEE"];
+      const idx = seq.indexOf(finalStatus);
+      const upto = idx === -1 ? seq.length : idx + 1;
+      let t = baseDate.getTime();
+      return seq.slice(0, upto).filter((s) => !(s === "LIVREE_PARTIELLE" && finalStatus !== "LIVREE_PARTIELLE")).map((s) => {
+        t += 1e3 * 60 * (20 + Math.random() * 90);
+        return { statut: s, date: new Date(t).toISOString(), utilisateur: "Frantzy Factures" };
+      });
+    }
+    const stockEntries = [
+      { id: uid("ENT"), numero: "ENT-3001", date: new Date(Date.now() - 1e3 * 60 * 60 * 20).toISOString(), depotId: "DEP-1", fournisseur: "Import Cara\xEFbes SA", produitId: "PRD-1", quantite: 200, refDocument: "BL-9982", factureFournisseur: "FF-2201", utilisateur: "Jean Beauvoir", observations: "" },
+      { id: uid("ENT"), numero: "ENT-3002", date: new Date(Date.now() - 1e3 * 60 * 60 * 44).toISOString(), depotId: "DEP-2", fournisseur: "Grand March\xE9 Distribution", produitId: "PRD-3", quantite: 120, refDocument: "BL-9983", factureFournisseur: "FF-2202", utilisateur: "Marie Ostine", observations: "" }
+    ];
+    pushAudit("Stock", "ENT-3001", "Entr\xE9e de stock", "Jean Beauvoir", "200 sacs Riz 25kg \u2014 D\xE9p\xF4t Nord");
+    pushAudit("Utilisateur", "USR-4", "Cr\xE9ation", "Sophonie Admin", "Ajout Assistant Ketia \u2014 D\xE9p\xF4t Nord");
+    pushAudit("Chauffeur", "CHF-3", "Cr\xE9ation profil", "Frantzy Factures", "Nouveau chauffeur Marckenson Pierre");
+    return { depots, produits, stocks, clients, chauffeurs, users, commandes, factures, retours, stockEntries, auditLogs, fournisseurs: ["Import Cara\xEFbes SA", "Grand March\xE9 Distribution", "Sucrerie Nationale", "Agro Tropical Import"] };
+  }
+  const STORAGE_KEY = "fluxliv_data_v1";
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+    }
+    const seeded = seedData();
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+    } catch (e) {
+    }
+    return seeded;
+  }
+  function saveData(data) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+    }
+  }
+  function getStockLine(data, depotId, produitId) {
+    return data.stocks.find((s) => s.depotId === depotId && s.produitId === produitId);
+  }
+  function stockDisponible(data, depotId, produitId) {
+    const s = getStockLine(data, depotId, produitId);
+    if (!s) return 0;
+    return s.quantiteValidee - s.quantiteReservee;
+  }
+  function validerCommande(data, { clientId, depotId, items }) {
+    const errors = [];
+    const client = data.clients.find((c) => c.id === clientId);
+    if (!client || client.statut !== "actif") {
+      errors.push({ code: "BLOQUEE_LIMITE", message: "Compte client non autoris\xE9 ou bloqu\xE9." });
+      return { ok: false, errors };
+    }
+    const montantCommande = items.reduce((sum, it) => {
+      const p = data.produits.find((pr) => pr.id === it.produitId);
+      return sum + (p ? p.prix * it.quantite : 0);
+    }, 0);
+    if (client.soldeActuel + montantCommande > client.limiteCredit) {
+      errors.push({ code: "BLOQUEE_LIMITE", message: `Limite de cr\xE9dit d\xE9pass\xE9e : solde ${fmtMoney(client.soldeActuel)} + commande ${fmtMoney(montantCommande)} > limite ${fmtMoney(client.limiteCredit)}.` });
+    }
+    items.forEach((it) => {
+      const p = data.produits.find((pr) => pr.id === it.produitId);
+      const dispo = stockDisponible(data, depotId, it.produitId);
+      if (dispo < it.quantite) {
+        errors.push({ code: "BLOQUEE_STOCK", message: `Stock insuffisant pour ${p?.nom || it.produitId} : demand\xE9 ${it.quantite}, disponible ${dispo}.` });
+      }
+    });
+    return { ok: errors.length === 0, errors, montantCommande };
+  }
+  function useStore() {
+    const [data, setData] = useState(loadData);
+    useEffect(() => {
+      saveData(data);
+    }, [data]);
+    const audit = useCallback((entite, entiteId, action, utilisateur, details, extra) => {
+      setData((d) => ({ ...d, auditLogs: [{ id: uid("AUD"), entite, entiteId, action, utilisateur, details: details || "", date: (/* @__PURE__ */ new Date()).toISOString(), ...extra }, ...d.auditLogs] }));
+    }, []);
+    const api = useMemo(() => ({
+      data,
+      addChauffeur(payload, utilisateur) {
+        const id = uid("CHF");
+        setData((d) => ({ ...d, chauffeurs: [{ id, statut: "actif", dateEnregistrement: (/* @__PURE__ */ new Date()).toISOString(), historique: 0, ...payload }, ...d.chauffeurs] }));
+        audit("Chauffeur", id, "Cr\xE9ation profil", utilisateur, `${payload.nom} \u2014 ${payload.vehicule || ""} ${payload.plaque || ""}`);
+        return id;
+      },
+      creerCommande({ clientId, chauffeurId, depotId, items, observations }, utilisateur) {
+        const valid = validerCommande(data, { clientId, depotId, items });
+        const numero = "CMD-" + (1e3 + data.commandes.length);
+        const id = uid("CMD");
+        const statut = valid.ok ? "VALIDEE" : valid.errors[0]?.code || "EN_VALIDATION";
+        const commande = { id, numero, date: (/* @__PURE__ */ new Date()).toISOString(), clientId, chauffeurId, depotId, items, observations, utilisateur, statut, blocages: valid.errors };
+        setData((d) => {
+          let stocks = d.stocks;
+          if (valid.ok) {
+            stocks = d.stocks.map((s) => {
+              const it = items.find((i) => i.produitId === s.produitId && s.depotId === depotId);
+              if (it) return { ...s, quantiteReservee: s.quantiteReservee + it.quantite };
+              return s;
+            });
+          }
+          return { ...d, commandes: [commande, ...d.commandes], stocks };
+        });
+        audit("Commande", numero, valid.ok ? "Cr\xE9ation \u2014 valid\xE9e" : "Cr\xE9ation \u2014 bloqu\xE9e", utilisateur, valid.ok ? "Stock r\xE9serv\xE9 automatiquement" : valid.errors.map((e) => e.message).join(" | "));
+        return { id, numero, ok: valid.ok, errors: valid.errors };
+      },
+      genererFacture(commandeId, utilisateur) {
+        const cmd = data.commandes.find((c) => c.id === commandeId);
+        if (!cmd || cmd.statut !== "VALIDEE") return { ok: false };
+        const numero = "FAC-" + (5e3 + data.factures.length);
+        const id = uid("FAC");
+        const items = cmd.items.map((it) => {
+          const p = data.produits.find((pr) => pr.id === it.produitId);
+          return { produitId: it.produitId, quantiteFacturee: it.quantite, quantiteChargee: 0, quantiteLivree: 0, quantiteRetournee: 0, prix: p?.prix || 0, montant: (p?.prix || 0) * it.quantite };
+        });
+        const montantTotal = items.reduce((s, i) => s + i.montant, 0);
+        const facture = {
+          id,
+          numero,
+          date: (/* @__PURE__ */ new Date()).toISOString(),
+          clientId: cmd.clientId,
+          chauffeurId: cmd.chauffeurId,
+          depotId: cmd.depotId,
+          commandeId,
+          statut: "GENEREE",
+          items,
+          montantTotal,
+          utilisateur,
+          timeline: [
+            { statut: "BROUILLON", date: cmd.date, utilisateur: cmd.utilisateur },
+            { statut: "VALIDEE", date: cmd.date, utilisateur: cmd.utilisateur },
+            { statut: "GENEREE", date: (/* @__PURE__ */ new Date()).toISOString(), utilisateur }
+          ]
+        };
+        setData((d) => ({
+          ...d,
+          factures: [facture, ...d.factures],
+          commandes: d.commandes.map((c) => c.id === commandeId ? { ...c, statut: "FACTUREE" } : c),
+          clients: d.clients.map((c) => c.id === cmd.clientId ? { ...c, soldeActuel: c.soldeActuel + montantTotal } : c)
+        }));
+        audit("Facture", numero, "G\xE9n\xE9ration", utilisateur, `Montant ${fmtMoney(montantTotal)} \u2014 Client d\xE9bit\xE9`);
+        return { ok: true, id, numero };
+      },
+      changerStatutFacture(factureId, nouveauStatut, utilisateur, note) {
+        setData((d) => ({
+          ...d,
+          factures: d.factures.map((f2) => f2.id === factureId ? { ...f2, statut: nouveauStatut, timeline: [...f2.timeline, { statut: nouveauStatut, date: (/* @__PURE__ */ new Date()).toISOString(), utilisateur, note }] } : f2)
+        }));
+        const f = data.factures.find((x) => x.id === factureId);
+        audit("Facture", f?.numero || factureId, `Statut \u2192 ${FACTURE_STATUTS[nouveauStatut]?.label || nouveauStatut}`, utilisateur, note || "");
+      },
+      enregistrerReception(factureId, utilisateur) {
+        this.changerStatutFacture(factureId, "ATTENTE_CHARGEMENT", utilisateur, "Facture re\xE7ue au registre \xE9lectronique");
+      },
+      confirmerChargement(factureId, chargements, utilisateur) {
+        setData((d) => {
+          const f2 = d.factures.find((x) => x.id === factureId);
+          const items = f2.items.map((it) => {
+            const ch = chargements.find((c) => c.produitId === it.produitId);
+            return ch ? { ...it, quantiteChargee: ch.quantiteChargee } : it;
+          });
+          const complet = items.every((it) => it.quantiteChargee >= it.quantiteFacturee);
+          const statut = "CHARGEE";
+          const stocks = d.stocks.map((s) => {
+            if (s.depotId !== f2.depotId) return s;
+            const ch = chargements.find((c) => c.produitId === s.produitId);
+            if (!ch) return s;
+            return { ...s, quantitePhysique: s.quantitePhysique - ch.quantiteChargee, quantiteValidee: s.quantiteValidee - ch.quantiteChargee, quantiteReservee: Math.max(0, s.quantiteReservee - ch.quantiteChargee) };
+          });
+          return {
+            ...d,
+            stocks,
+            factures: d.factures.map((x) => x.id === factureId ? { ...x, items, statut, chargementPartiel: !complet, timeline: [...x.timeline, { statut: "EN_CHARGEMENT", date: (/* @__PURE__ */ new Date()).toISOString(), utilisateur }, { statut: "CHARGEE", date: (/* @__PURE__ */ new Date()).toISOString(), utilisateur, note: complet ? "Chargement complet" : "Chargement partiel" }] } : x)
+          };
+        });
+        const f = data.factures.find((x) => x.id === factureId);
+        audit("Chargement", f?.numero || factureId, "Confirmation chargement", utilisateur, chargements.map((c) => `${c.produitId}: ${c.quantiteChargee}`).join(", "));
+      },
+      confirmerLivraison(factureId, livraisons, utilisateur) {
+        setData((d) => {
+          const f2 = d.factures.find((x) => x.id === factureId);
+          const items = f2.items.map((it) => {
+            const lv = livraisons.find((l) => l.produitId === it.produitId);
+            return lv ? { ...it, quantiteLivree: lv.quantiteLivree, quantiteRetournee: lv.quantiteRetournee || 0 } : it;
+          });
+          const complet = items.every((it) => it.quantiteLivree >= it.quantiteFacturee);
+          const statut = complet ? "LIVREE_COMPLETE" : "LIVREE_PARTIELLE";
+          const newRetours = [...d.retours];
+          livraisons.forEach((l) => {
+            if (l.quantiteRetournee > 0) {
+              newRetours.unshift({ id: uid("RET"), factureId, produitId: l.produitId, quantite: l.quantiteRetournee, motif: l.motif || "Non sp\xE9cifi\xE9", depotId: f2.depotId, utilisateur, date: (/* @__PURE__ */ new Date()).toISOString() });
+            }
+          });
+          return {
+            ...d,
+            retours: newRetours,
+            factures: d.factures.map((x) => x.id === factureId ? { ...x, items, statut, timeline: [...x.timeline, { statut: "EN_LIVRAISON", date: (/* @__PURE__ */ new Date()).toISOString(), utilisateur }, { statut, date: (/* @__PURE__ */ new Date()).toISOString(), utilisateur }] } : x)
+          };
+        });
+        const f = data.factures.find((x) => x.id === factureId);
+        audit("Livraison", f?.numero || factureId, "Confirmation livraison", utilisateur, livraisons.map((l) => `${l.produitId}: livr\xE9 ${l.quantiteLivree}, retour ${l.quantiteRetournee || 0}`).join(" | "));
+      },
+      envoyerCertification(factureId, utilisateur) {
+        this.changerStatutFacture(factureId, "ATTENTE_CERTIFICATION", utilisateur, "Envoy\xE9e pour certification");
+      },
+      certifierFacture(factureId, decision, utilisateur, motif) {
+        const statut = decision === "approve" ? "CERTIFIEE" : "REJETEE";
+        this.changerStatutFacture(factureId, statut, utilisateur, motif || (decision === "approve" ? "Facture certifi\xE9e" : "Rejet\xE9e \u2014 correction demand\xE9e"));
+      },
+      creerEntreeStock(payload, utilisateur) {
+        const numero = "ENT-" + (3e3 + data.stockEntries.length + 1);
+        const id = uid("ENT");
+        const entry = { id, numero, date: (/* @__PURE__ */ new Date()).toISOString(), utilisateur, ...payload };
+        setData((d) => {
+          const stocks = d.stocks.some((s) => s.depotId === payload.depotId && s.produitId === payload.produitId) ? d.stocks.map((s) => s.depotId === payload.depotId && s.produitId === payload.produitId ? { ...s, quantitePhysique: s.quantitePhysique + payload.quantite, quantiteValidee: s.quantiteValidee + payload.quantite } : s) : [...d.stocks, { id: uid("STK"), depotId: payload.depotId, produitId: payload.produitId, quantitePhysique: payload.quantite, quantiteReservee: 0, quantiteValidee: payload.quantite }];
+          return { ...d, stocks, stockEntries: [entry, ...d.stockEntries] };
+        });
+        audit("Stock", numero, "Entr\xE9e de stock", utilisateur, `+${payload.quantite} \u2014 D\xE9p\xF4t ${payload.depotId}`);
+        return { ok: true, numero };
+      },
+      modifierEntreeStock(entryId, nouvelleQuantite, utilisateur, adminAutorisant, motif) {
+        const entry = data.stockEntries.find((e) => e.id === entryId);
+        if (!entry) return;
+        const delta = nouvelleQuantite - entry.quantite;
+        setData((d) => ({
+          ...d,
+          stockEntries: d.stockEntries.map((e) => e.id === entryId ? { ...e, quantite: nouvelleQuantite } : e),
+          stocks: d.stocks.map((s) => s.depotId === entry.depotId && s.produitId === entry.produitId ? { ...s, quantitePhysique: s.quantitePhysique + delta, quantiteValidee: s.quantiteValidee + delta } : s)
+        }));
+        audit("Stock", entry.numero, "Modification entr\xE9e (autoris\xE9e Admin)", utilisateur, `Quantit\xE9 ${entry.quantite} \u2192 ${nouvelleQuantite}. Autoris\xE9 par ${adminAutorisant}. Motif: ${motif}`, { ancienneValeur: entry.quantite, nouvelleValeur: nouvelleQuantite, autorisePar: adminAutorisant, motif });
+      },
+      addUser(payload, utilisateur) {
+        const id = uid("USR");
+        setData((d) => ({ ...d, users: [{ id, actif: true, ...payload }, ...d.users] }));
+        audit("Utilisateur", id, "Cr\xE9ation", utilisateur, `${payload.nom} \u2014 ${ROLES[payload.role]?.label}`);
+      },
+      toggleUser(userId, utilisateur) {
+        setData((d) => ({ ...d, users: d.users.map((u2) => u2.id === userId ? { ...u2, actif: !u2.actif } : u2) }));
+        const u = data.users.find((x) => x.id === userId);
+        audit("Utilisateur", userId, u?.actif ? "D\xE9sactivation" : "Activation", utilisateur, u?.nom || "");
+      }
+    }), [data, audit]);
+    return api;
+  }
+  function StatutBadge({ statut }) {
+    const cfg = FACTURE_STATUTS[statut] || { label: statut, color: "gray" };
+    return /* @__PURE__ */ React.createElement("span", { className: `badge b-${cfg.color}` }, /* @__PURE__ */ React.createElement("span", { className: "badge-dot", style: { background: "currentColor" } }), cfg.label);
+  }
+  function Modal({ title, onClose, children, width }) {
+    return /* @__PURE__ */ React.createElement("div", { className: "modal-overlay", onMouseDown: (e) => {
+      if (e.target === e.currentTarget) onClose();
+    } }, /* @__PURE__ */ React.createElement("div", { className: "modal", style: width ? { maxWidth: width } : {} }, /* @__PURE__ */ React.createElement("div", { className: "modal-head" }, /* @__PURE__ */ React.createElement("h3", null, title), /* @__PURE__ */ React.createElement("button", { className: "modal-close", onClick: onClose }, /* @__PURE__ */ React.createElement(Icon, { name: "x", size: 18 }))), children));
+  }
+  function EmptyState({ icon, text }) {
+    return /* @__PURE__ */ React.createElement("div", { className: "empty-state" }, /* @__PURE__ */ React.createElement(Icon, { name: icon || "file", size: 34 }), /* @__PURE__ */ React.createElement("div", null, text));
+  }
+  const NAV_SECTIONS = [
+    { label: "Aper\xE7u", items: [
+      { key: "dashboard", label: "Tableau de bord", icon: "dashboard" },
+      { key: "search", label: "Recherche globale", icon: "search" }
+    ] },
+    { label: "Op\xE9rations", items: [
+      { key: "chauffeurs", label: "Chauffeurs", icon: "truck" },
+      { key: "commandes", label: "Commandes", icon: "order" },
+      { key: "factures", label: "Factures", icon: "invoice" },
+      { key: "chargement", label: "Chargement", icon: "loading" },
+      { key: "livraison", label: "Livraison & retours", icon: "delivery" },
+      { key: "certification", label: "Certification", icon: "certify" }
+    ] },
+    { label: "Stock", items: [
+      { key: "stock", label: "Stock & d\xE9p\xF4ts", icon: "warehouse" }
+    ] },
+    { label: "Administration", items: [
+      { key: "utilisateurs", label: "Utilisateurs", icon: "users", adminOnly: true },
+      { key: "audit", label: "Journal d'audit", icon: "audit", adminOnly: true }
+    ] }
+  ];
+  function Sidebar({ page, setPage, collapsed, setCollapsed, role, counts, mobileOpen, setMobileOpen }) {
+    return /* @__PURE__ */ React.createElement("div", { className: `sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "sb-brand" }, /* @__PURE__ */ React.createElement("div", { className: "sb-brand-mark" }, "FL"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "sb-brand-text" }, "FluxLiv"), /* @__PURE__ */ React.createElement("div", { className: "sb-brand-sub" }, "Factures \xB7 Stock \xB7 Livraisons"))), /* @__PURE__ */ React.createElement("div", { className: "sb-nav" }, NAV_SECTIONS.map((section) => {
+      const items = section.items.filter((it) => !it.adminOnly || role === "ADMIN");
+      if (items.length === 0) return null;
+      return /* @__PURE__ */ React.createElement("div", { key: section.label }, /* @__PURE__ */ React.createElement("div", { className: "sb-section-label" }, section.label), items.map((it) => /* @__PURE__ */ React.createElement("button", { key: it.key, className: `sb-item ${page === it.key ? "active" : ""}`, onClick: () => {
+        setPage(it.key);
+        setMobileOpen(false);
+      } }, /* @__PURE__ */ React.createElement(Icon, { name: it.icon }), /* @__PURE__ */ React.createElement("span", null, it.label), counts[it.key] ? /* @__PURE__ */ React.createElement("span", { className: "sb-badge" }, counts[it.key]) : null)));
+    })), /* @__PURE__ */ React.createElement("div", { className: "sb-foot" }, /* @__PURE__ */ React.createElement("button", { className: "sb-collapse-btn", onClick: () => setCollapsed((c) => !c) }, /* @__PURE__ */ React.createElement(Icon, { name: "chevronRight", size: 15, style: { transform: collapsed ? "none" : "rotate(180deg)" } }))));
+  }
+  function Topbar({ title, sub, role, setRole, users, currentUser, setCurrentUser, onSearch, setMobileOpen }) {
+    return /* @__PURE__ */ React.createElement("div", { className: "topbar" }, /* @__PURE__ */ React.createElement("button", { className: "btn ghost sm", style: { display: "none" }, id: "mobile-menu-btn", onClick: () => setMobileOpen((o) => !o) }, /* @__PURE__ */ React.createElement(Icon, { name: "menu" })), /* @__PURE__ */ React.createElement("button", { className: "btn ghost sm mobile-only", onClick: () => setMobileOpen((o) => !o) }, /* @__PURE__ */ React.createElement(Icon, { name: "menu" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", null, title), sub && /* @__PURE__ */ React.createElement("div", { className: "sub" }, sub)), /* @__PURE__ */ React.createElement("div", { className: "search-box" }, /* @__PURE__ */ React.createElement(Icon, { name: "search", size: 15 }), /* @__PURE__ */ React.createElement("input", { placeholder: "Rechercher facture, client, chauffeur, produit\u2026", onKeyDown: (e) => {
+      if (e.key === "Enter") onSearch(e.target.value);
+    } })), /* @__PURE__ */ React.createElement("div", { className: "topbar-right" }, /* @__PURE__ */ React.createElement("div", { className: "role-pill" }, /* @__PURE__ */ React.createElement("div", { className: "role-avatar", style: { background: ROLES[role]?.color } }, currentUser?.nom?.slice(0, 2).toUpperCase()), /* @__PURE__ */ React.createElement("select", { className: "role-select", value: currentUser?.id, onChange: (e) => setCurrentUser(users.find((u) => u.id === e.target.value)) }, users.filter((u) => u.actif).map((u) => /* @__PURE__ */ React.createElement("option", { key: u.id, value: u.id }, u.nom, " \u2014 ", ROLES[u.role]?.label))))));
+  }
+  function DashboardPage({ store, setPage }) {
+    const { data } = store;
+    const facturesToday = data.factures.filter((f) => isToday(f.date));
+    const countBy = (statuts) => data.factures.filter((f) => statuts.includes(f.statut)).length;
+    const kpisFactures = [
+      { label: "Factures du jour", value: facturesToday.length, color: "var(--accent)" },
+      { label: "En attente de chargement", value: countBy(["ATTENTE_CHARGEMENT", "EN_CHARGEMENT"]), color: "var(--amber)" },
+      { label: "En livraison", value: countBy(["EN_LIVRAISON"]), color: "var(--amber)" },
+      { label: "Livr\xE9es compl\xE8tes", value: countBy(["LIVREE_COMPLETE"]), color: "var(--green)" },
+      { label: "Livr\xE9es partielles", value: countBy(["LIVREE_PARTIELLE"]), color: "var(--amber)" },
+      { label: "Attente certification", value: countBy(["ATTENTE_CERTIFICATION"]), color: "var(--amber)" },
+      { label: "Certifi\xE9es", value: countBy(["CERTIFIEE"]), color: "var(--green)" },
+      { label: "Bloqu\xE9es", value: countBy(["BLOQUEE_LIMITE", "BLOQUEE_STOCK", "BLOQUEE_COMPTABLE"]), color: "var(--red)" }
+    ];
+    const stockTotal = data.stocks.reduce((s, x) => s + x.quantitePhysique, 0);
+    const stockDispo = data.stocks.reduce((s, x) => s + (x.quantiteValidee - x.quantiteReservee), 0);
+    const stockReserve = data.stocks.reduce((s, x) => s + x.quantiteReservee, 0);
+    const ruptures = data.produits.filter((p) => {
+      const total = data.stocks.filter((s) => s.produitId === p.id).reduce((s, x) => s + x.quantitePhysique, 0);
+      return total <= 0;
+    });
+    const stockBas = data.produits.filter((p) => {
+      const total = data.stocks.filter((s) => s.produitId === p.id).reduce((s, x) => s + x.quantitePhysique, 0);
+      return total > 0 && total <= p.seuilBas;
+    });
+    const chauffeursToday = data.chauffeurs.filter((c) => isToday(c.dateEnregistrement)).length;
+    const commandesToday = data.commandes.filter((c) => isToday(c.date)).length;
+    const retoursToday = data.retours.filter((r) => isToday(r.date)).length;
+    const recentFactures = [...data.factures].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title" }, "Tableau de bord"), /* @__PURE__ */ React.createElement("div", { className: "section-sub" }, "Vue d'ensemble en temps r\xE9el des factures, du stock et des op\xE9rations."), /* @__PURE__ */ React.createElement("div", { className: "card-title", style: { marginTop: 6 } }, "Factures"), /* @__PURE__ */ React.createElement("div", { className: "grid", style: { gridTemplateColumns: "repeat(auto-fit, minmax(150px,1fr))", marginBottom: 22 } }, kpisFactures.map((k) => /* @__PURE__ */ React.createElement("div", { className: "kpi", key: k.label }, /* @__PURE__ */ React.createElement("div", { className: "kpi-accent", style: { background: k.color } }), /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, k.label), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, k.value)))), /* @__PURE__ */ React.createElement("div", { className: "grid", style: { gridTemplateColumns: "2fr 1fr", alignItems: "start" } }, /* @__PURE__ */ React.createElement("div", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Factures r\xE9centes", /* @__PURE__ */ React.createElement("button", { className: "btn ghost sm", onClick: () => setPage("factures") }, "Voir tout ", /* @__PURE__ */ React.createElement(Icon, { name: "chevronRight", size: 13 }))), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Facture"), /* @__PURE__ */ React.createElement("th", null, "Client"), /* @__PURE__ */ React.createElement("th", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("th", null, "Statut"), /* @__PURE__ */ React.createElement("th", null, "Montant"))), /* @__PURE__ */ React.createElement("tbody", null, recentFactures.map((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      const dep = data.depots.find((d) => d.id === f.depotId);
+      return /* @__PURE__ */ React.createElement("tr", { className: "row-hover", key: f.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f.numero), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", null, dep?.nom), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(StatutBadge, { statut: f.statut })), /* @__PURE__ */ React.createElement("td", { className: "mono" }, fmtMoney(f.montantTotal)));
+    }))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Stock"), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Stock total (physique)"), /* @__PURE__ */ React.createElement("span", { className: "val" }, stockTotal)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Stock disponible"), /* @__PURE__ */ React.createElement("span", { className: "val" }, stockDispo)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Stock r\xE9serv\xE9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, stockReserve)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Produits en rupture"), /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--red)" } }, ruptures.length)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Produits \xE0 stock bas"), /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--amber)" } }, stockBas.length))), /* @__PURE__ */ React.createElement("div", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Op\xE9rations du jour"), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Chauffeurs enregistr\xE9s"), /* @__PURE__ */ React.createElement("span", { className: "val" }, chauffeursToday)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Commandes cr\xE9\xE9es"), /* @__PURE__ */ React.createElement("span", { className: "val" }, commandesToday)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Retours"), /* @__PURE__ */ React.createElement("span", { className: "val" }, retoursToday))), (ruptures.length > 0 || stockBas.length > 0) && /* @__PURE__ */ React.createElement("div", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Alertes stock"), ruptures.map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, className: "alert error", style: { marginBottom: 6 } }, /* @__PURE__ */ React.createElement(Icon, { name: "alert", size: 14 }), " ", p.nom, " \u2014 en rupture")), stockBas.map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, className: "alert warn", style: { marginBottom: 6 } }, /* @__PURE__ */ React.createElement(Icon, { name: "alert", size: 14 }), " ", p.nom, " \u2014 stock bas"))))));
+  }
+  function ChauffeurForm({ onSave, onClose, clients }) {
+    const [f, setF] = useState({ nom: "", telephone: "", vehicule: "", plaque: "", clientAssocie: "", docType: "CIN", docNumero: "" });
+    const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+    const submit = () => {
+      if (!f.nom || !f.telephone) return;
+      onSave({
+        nom: f.nom,
+        telephone: f.telephone,
+        vehicule: f.vehicule,
+        plaque: f.plaque,
+        clientAssocie: f.clientAssocie || null,
+        document: { type: f.docType, numero: f.docNumero, dateImport: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) }
+      });
+      onClose();
+    };
+    return /* @__PURE__ */ React.createElement(Modal, { title: "Nouveau profil chauffeur", onClose }, /* @__PURE__ */ React.createElement("div", { className: "field-row" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Nom complet *"), /* @__PURE__ */ React.createElement("input", { value: f.nom, onChange: (e) => set("nom", e.target.value), placeholder: "Ex: Wilner Joseph" })), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "T\xE9l\xE9phone *"), /* @__PURE__ */ React.createElement("input", { value: f.telephone, onChange: (e) => set("telephone", e.target.value), placeholder: "509-XXXX-XXXX" }))), /* @__PURE__ */ React.createElement("div", { className: "field-row" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Type de v\xE9hicule"), /* @__PURE__ */ React.createElement("input", { value: f.vehicule, onChange: (e) => set("vehicule", e.target.value), placeholder: "Camion 10 tonnes" })), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Plaque d'immatriculation"), /* @__PURE__ */ React.createElement("input", { value: f.plaque, onChange: (e) => set("plaque", e.target.value), placeholder: "PP-0000-AA" }))), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Client associ\xE9 (optionnel)"), /* @__PURE__ */ React.createElement("select", { value: f.clientAssocie, onChange: (e) => set("clientAssocie", e.target.value) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "\u2014 Aucun \u2014"), clients.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.nom)))), /* @__PURE__ */ React.createElement("div", { className: "field-row" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Type de pi\xE8ce d'identit\xE9"), /* @__PURE__ */ React.createElement("select", { value: f.docType, onChange: (e) => set("docType", e.target.value) }, /* @__PURE__ */ React.createElement("option", null, "CIN"), /* @__PURE__ */ React.createElement("option", null, "Permis"), /* @__PURE__ */ React.createElement("option", null, "Passeport"))), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Num\xE9ro du document"), /* @__PURE__ */ React.createElement("input", { value: f.docNumero, onChange: (e) => set("docNumero", e.target.value), placeholder: "Num\xE9ro" }))), /* @__PURE__ */ React.createElement("div", { className: "alert info" }, /* @__PURE__ */ React.createElement(Icon, { name: "file", size: 14 }), " Dans une version connect\xE9e, une photo de la pi\xE8ce serait import\xE9e ici et rattach\xE9e au profil pour \xEAtre retrouv\xE9e \xE0 chaque visite."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 10 } }, /* @__PURE__ */ React.createElement("button", { className: "btn", onClick: onClose }, "Annuler"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: submit, disabled: !f.nom || !f.telephone }, "Enregistrer le profil")));
+  }
+  function ChauffeursPage({ store, user }) {
+    const { data } = store;
+    const [q, setQ] = useState("");
+    const [showForm, setShowForm] = useState(false);
+    const [selected, setSelected] = useState(null);
+    const filtered = data.chauffeurs.filter((c) => {
+      const s = q.toLowerCase();
+      return !s || c.nom.toLowerCase().includes(s) || c.telephone.includes(s) || (c.plaque || "").toLowerCase().includes(s);
+    });
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Chauffeurs"), /* @__PURE__ */ React.createElement("div", { className: "section-sub", style: { margin: 0 } }, "Profils r\xE9utilisables \u2014 plus besoin de resaisir \xE0 chaque visite.")), /* @__PURE__ */ React.createElement("button", { className: "btn primary", style: { marginLeft: "auto" }, onClick: () => setShowForm(true) }, /* @__PURE__ */ React.createElement(Icon, { name: "plus", size: 15 }), " Nouveau chauffeur")), /* @__PURE__ */ React.createElement("div", { className: "search-box", style: { maxWidth: 340, marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Icon, { name: "search", size: 15 }), /* @__PURE__ */ React.createElement("input", { placeholder: "Chercher nom, t\xE9l\xE9phone, plaque\u2026", value: q, onChange: (e) => setQ(e.target.value) })), /* @__PURE__ */ React.createElement("div", { className: "grid", style: { gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))" } }, filtered.map((c) => {
+      const cli = data.clients.find((x) => x.id === c.clientAssocie);
+      return /* @__PURE__ */ React.createElement("div", { className: "card", key: c.id, style: { cursor: "pointer" }, onClick: () => setSelected(c) }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { className: "role-avatar", style: { background: "var(--accent)", width: 36, height: 36, fontSize: 13 } }, c.nom.split(" ").map((w) => w[0]).join("").slice(0, 2)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 13.5 } }, c.nom), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--ink-faint)" } }, c.vehicule, " \xB7 ", c.plaque)), /* @__PURE__ */ React.createElement("span", { className: `badge b-${c.statut === "actif" ? "green" : "gray"}`, style: { marginLeft: "auto" } }, c.statut)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "T\xE9l\xE9phone"), /* @__PURE__ */ React.createElement("span", { className: "val", style: { fontWeight: 500 } }, c.telephone)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Client associ\xE9"), /* @__PURE__ */ React.createElement("span", { className: "val", style: { fontWeight: 500 } }, cli?.nom || "\u2014")), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Document"), /* @__PURE__ */ React.createElement("span", { className: "val", style: { fontWeight: 500 } }, c.document?.type, " \xB7 ", c.document?.numero)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Historique op\xE9rations"), /* @__PURE__ */ React.createElement("span", { className: "val" }, c.historique || 0)));
+    }), filtered.length === 0 && /* @__PURE__ */ React.createElement(EmptyState, { icon: "truck", text: "Aucun chauffeur trouv\xE9." })), showForm && /* @__PURE__ */ React.createElement(ChauffeurForm, { clients: data.clients, onClose: () => setShowForm(false), onSave: (p) => store.addChauffeur(p, user.nom) }), selected && /* @__PURE__ */ React.createElement(Modal, { title: selected.nom, onClose: () => setSelected(null) }, /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "T\xE9l\xE9phone"), /* @__PURE__ */ React.createElement("span", { className: "val" }, selected.telephone)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "V\xE9hicule"), /* @__PURE__ */ React.createElement("span", { className: "val" }, selected.vehicule)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Plaque"), /* @__PURE__ */ React.createElement("span", { className: "val" }, selected.plaque)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Document"), /* @__PURE__ */ React.createElement("span", { className: "val" }, selected.document?.type, " \u2014 ", selected.document?.numero)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Enregistr\xE9 le"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtDate(selected.dateEnregistrement))), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Statut"), /* @__PURE__ */ React.createElement("span", { className: "val" }, selected.statut)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, marginBottom: 8 } }, "Factures li\xE9es \xE0 ce chauffeur"), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("tbody", null, data.factures.filter((f) => f.chauffeurId === selected.id).slice(0, 8).map((f) => /* @__PURE__ */ React.createElement("tr", { key: f.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f.numero), /* @__PURE__ */ React.createElement("td", null, fmtDate(f.date)), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(StatutBadge, { statut: f.statut })))), data.factures.filter((f) => f.chauffeurId === selected.id).length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { style: { color: "var(--ink-faint)" } }, "Aucune facture pour ce chauffeur."))))))));
+  }
+  function CommandeForm({ store, user, onClose }) {
+    const { data } = store;
+    const [clientId, setClientId] = useState("");
+    const [chauffeurId, setChauffeurId] = useState("");
+    const [depotId, setDepotId] = useState(data.depots[0]?.id || "");
+    const [items, setItems] = useState([{ produitId: "", quantite: "" }]);
+    const [observations, setObservations] = useState("");
+    const [result, setResult] = useState(null);
+    const [waMessage, setWaMessage] = useState("");
+    const addItem = () => setItems((it) => [...it, { produitId: "", quantite: "" }]);
+    const updItem = (i, k, v) => setItems((it) => it.map((x, idx) => idx === i ? { ...x, [k]: v } : x));
+    const rmItem = (i) => setItems((it) => it.filter((_, idx) => idx !== i));
+    const validItems = items.filter((it) => it.produitId && Number(it.quantite) > 0).map((it) => ({ produitId: it.produitId, quantite: Number(it.quantite) }));
+    const preview = useMemo(() => {
+      if (!clientId || !depotId || validItems.length === 0) return null;
+      return validerCommande(data, { clientId, depotId, items: validItems });
+    }, [clientId, depotId, JSON.stringify(validItems), data]);
+    const submit = () => {
+      if (!clientId || !chauffeurId || !depotId || validItems.length === 0) return;
+      const res = store.creerCommande({ clientId, chauffeurId, depotId, items: validItems, observations }, user.nom);
+      setResult(res);
+      if (res.ok) {
+        const cli = data.clients.find((c) => c.id === clientId);
+        const chf = data.chauffeurs.find((c) => c.id === chauffeurId);
+        const dep = data.depots.find((d) => d.id === depotId);
+        const lignes = validItems.map((it) => {
+          const p = data.produits.find((pr) => pr.id === it.produitId);
+          return `- ${p?.nom} : ${it.quantite} ${p?.unite}(s)`;
+        }).join("\n");
+        setWaMessage(`*Commande ${res.numero}*
+Client: ${cli?.nom}
+Chauffeur: ${chf?.nom} (${chf?.plaque})
+D\xE9p\xF4t: ${dep?.nom}
+
+${lignes}
+
+Date: ${fmtDateTime(/* @__PURE__ */ new Date())}`);
+      }
+    };
+    return /* @__PURE__ */ React.createElement(Modal, { title: "Nouvelle commande", onClose, width: 680 }, !result && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "field-row" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Client *"), /* @__PURE__ */ React.createElement("select", { value: clientId, onChange: (e) => setClientId(e.target.value) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "S\xE9lectionner\u2026"), data.clients.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.nom)))), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Chauffeur *"), /* @__PURE__ */ React.createElement("select", { value: chauffeurId, onChange: (e) => setChauffeurId(e.target.value) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "S\xE9lectionner\u2026"), data.chauffeurs.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.nom, " \u2014 ", c.plaque))))), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "D\xE9p\xF4t pr\xE9vu *"), /* @__PURE__ */ React.createElement("select", { value: depotId, onChange: (e) => setDepotId(e.target.value) }, data.depots.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.id, value: d.id }, d.nom)))), /* @__PURE__ */ React.createElement("label", { style: { fontSize: 12, color: "var(--ink-dim)", fontWeight: 600 } }, "Produits *"), items.map((it, i) => {
+      const dispo = it.produitId ? stockDisponible(data, depotId, it.produitId) : null;
+      return /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", gap: 8, marginTop: 8, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("select", { style: { flex: 2, background: "var(--panel-2)", border: "1px solid var(--line)", borderRadius: 6, padding: "9px 10px", color: "var(--ink)" }, value: it.produitId, onChange: (e) => updItem(i, "produitId", e.target.value) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Produit\u2026"), data.produits.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.id, value: p.id }, p.nom))), /* @__PURE__ */ React.createElement("input", { type: "number", min: "0", placeholder: "Qt\xE9", style: { flex: 1, background: "var(--panel-2)", border: "1px solid var(--line)", borderRadius: 6, padding: "9px 10px", color: "var(--ink)" }, value: it.quantite, onChange: (e) => updItem(i, "quantite", e.target.value) }), /* @__PURE__ */ React.createElement("button", { className: "btn ghost sm", onClick: () => rmItem(i) }, /* @__PURE__ */ React.createElement(Icon, { name: "x", size: 14 })), dispo !== null && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: dispo >= Number(it.quantite || 0) ? "var(--ink-faint)" : "var(--red)", width: 90, paddingTop: 10 } }, "dispo: ", dispo));
+    }), /* @__PURE__ */ React.createElement("button", { className: "btn ghost sm", style: { marginTop: 8 }, onClick: addItem }, /* @__PURE__ */ React.createElement(Icon, { name: "plus", size: 13 }), " Ajouter un produit"), /* @__PURE__ */ React.createElement("div", { className: "field", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement("label", null, "Observations"), /* @__PURE__ */ React.createElement("textarea", { rows: 2, value: observations, onChange: (e) => setObservations(e.target.value) })), preview && !preview.ok && /* @__PURE__ */ React.createElement("div", { className: "alert error" }, /* @__PURE__ */ React.createElement(Icon, { name: "alert", size: 14 }), /* @__PURE__ */ React.createElement("div", null, preview.errors.map((e, i) => /* @__PURE__ */ React.createElement("div", { key: i }, e.message)))), preview && preview.ok && /* @__PURE__ */ React.createElement("div", { className: "alert info" }, /* @__PURE__ */ React.createElement(Icon, { name: "check", size: 14 }), " Contr\xF4les OK \u2014 montant estim\xE9 ", fmtMoney(preview.montantCommande), ". La commande sera valid\xE9e et le stock r\xE9serv\xE9 automatiquement."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 } }, /* @__PURE__ */ React.createElement("button", { className: "btn", onClick: onClose }, "Annuler"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: submit, disabled: !clientId || !chauffeurId || !depotId || validItems.length === 0 }, "Cr\xE9er la commande"))), result && /* @__PURE__ */ React.createElement("div", null, result.ok ? /* @__PURE__ */ React.createElement("div", { className: "alert info" }, /* @__PURE__ */ React.createElement(Icon, { name: "check", size: 15 }), " Commande ", /* @__PURE__ */ React.createElement("b", null, result.numero), " cr\xE9\xE9e et valid\xE9e. Stock r\xE9serv\xE9.") : /* @__PURE__ */ React.createElement("div", { className: "alert error" }, /* @__PURE__ */ React.createElement(Icon, { name: "alert", size: 15 }), " Commande ", /* @__PURE__ */ React.createElement("b", null, result.numero), " cr\xE9\xE9e mais ", /* @__PURE__ */ React.createElement("b", null, "bloqu\xE9e"), " :", /* @__PURE__ */ React.createElement("div", { style: { marginTop: 4 } }, result.errors.map((e, i) => /* @__PURE__ */ React.createElement("div", { key: i }, "\u2022 ", e.message)))), result.ok && /* @__PURE__ */ React.createElement("div", { className: "card", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, /* @__PURE__ */ React.createElement(Icon, { name: "whatsapp", size: 15 }), " R\xE9sum\xE9 pour partage WhatsApp"), /* @__PURE__ */ React.createElement("pre", { style: { whiteSpace: "pre-wrap", fontSize: 12.5, background: "var(--panel-2)", padding: 10, borderRadius: 6, fontFamily: "inherit" } }, waMessage), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 } }, "Ce message est un canal de communication externe \u2014 l'application reste la source de v\xE9rit\xE9, avec la commande d\xE9j\xE0 enregistr\xE9e."), /* @__PURE__ */ React.createElement("button", { className: "btn sm", style: { marginTop: 8 }, onClick: () => navigator.clipboard?.writeText(waMessage) }, "Copier le message")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginTop: 14 } }, /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: onClose }, "Fermer"))));
+  }
+  function CommandesPage({ store, user }) {
+    const { data } = store;
+    const [showForm, setShowForm] = useState(false);
+    const sorted = [...data.commandes].sort((a, b) => new Date(b.date) - new Date(a.date));
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Commandes"), /* @__PURE__ */ React.createElement("div", { className: "section-sub", style: { margin: 0 } }, "Cr\xE9\xE9es lors de l'arriv\xE9e d'un chauffeur, contr\xF4l\xE9es automatiquement avant facturation.")), /* @__PURE__ */ React.createElement("button", { className: "btn primary", style: { marginLeft: "auto" }, onClick: () => setShowForm(true) }, /* @__PURE__ */ React.createElement(Icon, { name: "plus", size: 15 }), " Nouvelle commande")), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Commande"), /* @__PURE__ */ React.createElement("th", null, "Date"), /* @__PURE__ */ React.createElement("th", null, "Client"), /* @__PURE__ */ React.createElement("th", null, "Chauffeur"), /* @__PURE__ */ React.createElement("th", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("th", null, "Produits"), /* @__PURE__ */ React.createElement("th", null, "Statut"))), /* @__PURE__ */ React.createElement("tbody", null, sorted.map((c) => {
+      const cli = data.clients.find((x) => x.id === c.clientId);
+      const chf = data.chauffeurs.find((x) => x.id === c.chauffeurId);
+      const dep = data.depots.find((x) => x.id === c.depotId);
+      const isBlocked = c.statut.startsWith("BLOQUEE");
+      return /* @__PURE__ */ React.createElement("tr", { className: "row-hover", key: c.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, c.numero), /* @__PURE__ */ React.createElement("td", null, fmtDateTime(c.date)), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", null, chf?.nom), /* @__PURE__ */ React.createElement("td", null, dep?.nom), /* @__PURE__ */ React.createElement("td", null, c.items.map((it) => data.produits.find((p) => p.id === it.produitId)?.nom + " \xD7" + it.quantite).join(", ")), /* @__PURE__ */ React.createElement("td", null, c.statut === "FACTUREE" ? /* @__PURE__ */ React.createElement("span", { className: "badge b-green" }, "Factur\xE9e") : isBlocked ? /* @__PURE__ */ React.createElement("span", { className: "badge b-red" }, c.blocages?.[0]?.message?.split(":")[0] || c.statut) : /* @__PURE__ */ React.createElement("span", { className: "badge b-blue" }, "Valid\xE9e")));
+    }), sorted.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 7 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "order", text: "Aucune commande." })))))), showForm && /* @__PURE__ */ React.createElement(CommandeForm, { store, user, onClose: () => setShowForm(false) }));
+  }
+  function FactureDetail({ facture, data, onClose, store, user }) {
+    const cli = data.clients.find((c) => c.id === facture.clientId);
+    const chf = data.chauffeurs.find((c) => c.id === facture.chauffeurId);
+    const dep = data.depots.find((d) => d.id === facture.depotId);
+    const retours = data.retours.filter((r) => r.factureId === facture.id);
+    return /* @__PURE__ */ React.createElement(Modal, { title: `Facture ${facture.numero}`, onClose, width: 720 }, /* @__PURE__ */ React.createElement("div", { className: "grid", style: { gridTemplateColumns: "1fr 1fr", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Client"), /* @__PURE__ */ React.createElement("span", { className: "val" }, cli?.nom)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Chauffeur"), /* @__PURE__ */ React.createElement("span", { className: "val" }, chf?.nom)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("span", { className: "val" }, dep?.nom)), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Date"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtDateTime(facture.date))), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Montant"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtMoney(facture.montantTotal))), /* @__PURE__ */ React.createElement("div", { className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Statut actuel"), /* @__PURE__ */ React.createElement("span", { className: "val" }, /* @__PURE__ */ React.createElement(StatutBadge, { statut: facture.statut })))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, marginBottom: 8 } }, "Produits"), /* @__PURE__ */ React.createElement("div", { className: "table-wrap", style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Produit"), /* @__PURE__ */ React.createElement("th", null, "Factur\xE9"), /* @__PURE__ */ React.createElement("th", null, "Charg\xE9"), /* @__PURE__ */ React.createElement("th", null, "Livr\xE9"), /* @__PURE__ */ React.createElement("th", null, "Retourn\xE9"), /* @__PURE__ */ React.createElement("th", null, "Montant"))), /* @__PURE__ */ React.createElement("tbody", null, facture.items.map((it, i) => {
+      const p = data.produits.find((pr) => pr.id === it.produitId);
+      return /* @__PURE__ */ React.createElement("tr", { key: i }, /* @__PURE__ */ React.createElement("td", null, p?.nom), /* @__PURE__ */ React.createElement("td", { className: "mono" }, it.quantiteFacturee), /* @__PURE__ */ React.createElement("td", { className: "mono" }, it.quantiteChargee), /* @__PURE__ */ React.createElement("td", { className: "mono" }, it.quantiteLivree), /* @__PURE__ */ React.createElement("td", { className: "mono", style: { color: it.quantiteRetournee > 0 ? "var(--red)" : void 0 } }, it.quantiteRetournee), /* @__PURE__ */ React.createElement("td", { className: "mono" }, fmtMoney(it.montant)));
+    })))), retours.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, marginBottom: 8 } }, "Retours associ\xE9s"), /* @__PURE__ */ React.createElement("div", { className: "table-wrap", style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Produit"), /* @__PURE__ */ React.createElement("th", null, "Quantit\xE9"), /* @__PURE__ */ React.createElement("th", null, "Motif"), /* @__PURE__ */ React.createElement("th", null, "Utilisateur"), /* @__PURE__ */ React.createElement("th", null, "Date"))), /* @__PURE__ */ React.createElement("tbody", null, retours.map((r) => {
+      const p = data.produits.find((pr) => pr.id === r.produitId);
+      return /* @__PURE__ */ React.createElement("tr", { key: r.id }, /* @__PURE__ */ React.createElement("td", null, p?.nom), /* @__PURE__ */ React.createElement("td", { className: "mono" }, r.quantite), /* @__PURE__ */ React.createElement("td", null, r.motif), /* @__PURE__ */ React.createElement("td", null, r.utilisateur), /* @__PURE__ */ React.createElement("td", null, fmtDateTime(r.date)));
+    }))))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, marginBottom: 10 } }, "Historique complet (tra\xE7abilit\xE9)"), /* @__PURE__ */ React.createElement("div", { className: "timeline" }, facture.timeline.map((t, i) => /* @__PURE__ */ React.createElement("div", { className: "timeline-item", key: i }, /* @__PURE__ */ React.createElement("div", { className: "t-title" }, FACTURE_STATUTS[t.statut]?.label || t.statut), /* @__PURE__ */ React.createElement("div", { className: "t-meta" }, fmtDateTime(t.date), " \xB7 ", t.utilisateur), t.note && /* @__PURE__ */ React.createElement("div", { className: "t-note" }, t.note)))));
+  }
+  function FacturesPage({ store, user }) {
+    const { data } = store;
+    const [filter, setFilter] = useState("TOUS");
+    const [selected, setSelected] = useState(null);
+    const filterGroups = {
+      TOUS: null,
+      ACTIVES: ["GENEREE", "IMPRIMEE", "ATTENTE_CHARGEMENT", "EN_CHARGEMENT", "CHARGEE", "EN_LIVRAISON"],
+      LIVREES: ["LIVREE_PARTIELLE", "LIVREE_COMPLETE"],
+      CERTIF: ["ATTENTE_CERTIFICATION", "CERTIFIEE", "REJETEE"]
+    };
+    let list = [...data.factures].sort((a, b) => b.numero.localeCompare(a.numero, void 0, { numeric: true }));
+    if (filterGroups[filter]) list = list.filter((f) => filterGroups[filter].includes(f.statut));
+    const canGenerate = can(user.role, "facture.create");
+    const commandesAFacturer = data.commandes.filter((c) => c.statut === "VALIDEE");
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Factures"), /* @__PURE__ */ React.createElement("div", { className: "section-sub" }, "Registre \xE9lectronique \u2014 classement d\xE9croissant par num\xE9ro. Cliquez une ligne pour la fiche compl\xE8te."), canGenerate && commandesAFacturer.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "card", style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Commandes valid\xE9es en attente de facturation"), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("tbody", null, commandesAFacturer.map((c) => {
+      const cli = data.clients.find((x) => x.id === c.clientId);
+      return /* @__PURE__ */ React.createElement("tr", { key: c.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, c.numero), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("button", { className: "btn sm primary", onClick: () => store.genererFacture(c.id, user.nom) }, /* @__PURE__ */ React.createElement(Icon, { name: "invoice", size: 13 }), " G\xE9n\xE9rer la facture")));
+    }))))), /* @__PURE__ */ React.createElement("div", { className: "chip-row" }, [["TOUS", "Toutes"], ["ACTIVES", "En cours"], ["LIVREES", "Livr\xE9es"], ["CERTIF", "Certification"]].map(([k, l]) => /* @__PURE__ */ React.createElement("button", { key: k, className: `chip ${filter === k ? "active" : ""}`, onClick: () => setFilter(k) }, l))), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Facture"), /* @__PURE__ */ React.createElement("th", null, "Date"), /* @__PURE__ */ React.createElement("th", null, "Client"), /* @__PURE__ */ React.createElement("th", null, "Chauffeur"), /* @__PURE__ */ React.createElement("th", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("th", null, "Montant"), /* @__PURE__ */ React.createElement("th", null, "Statut"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, list.map((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      const chf = data.chauffeurs.find((c) => c.id === f.chauffeurId);
+      const dep = data.depots.find((d) => d.id === f.depotId);
+      return /* @__PURE__ */ React.createElement("tr", { className: "row-hover", key: f.id, style: { cursor: "pointer" }, onClick: () => setSelected(f) }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f.numero), /* @__PURE__ */ React.createElement("td", null, fmtDate(f.date)), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", null, chf?.nom), /* @__PURE__ */ React.createElement("td", null, dep?.nom), /* @__PURE__ */ React.createElement("td", { className: "mono" }, fmtMoney(f.montantTotal)), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(StatutBadge, { statut: f.statut })), /* @__PURE__ */ React.createElement("td", null, f.statut === "GENEREE" && can(user.role, "facture.print") && /* @__PURE__ */ React.createElement("button", { className: "btn sm", onClick: (e) => {
+        e.stopPropagation();
+        store.changerStatutFacture(f.id, "IMPRIMEE", user.nom, "Facture imprim\xE9e");
+      } }, /* @__PURE__ */ React.createElement(Icon, { name: "printer", size: 13 }), " Imprimer"), f.statut === "IMPRIMEE" && can(user.role, "facture.register") && /* @__PURE__ */ React.createElement("button", { className: "btn sm", onClick: (e) => {
+        e.stopPropagation();
+        store.enregistrerReception(f.id, user.nom);
+      } }, /* @__PURE__ */ React.createElement(Icon, { name: "check", size: 13 }), " Enregistrer r\xE9ception")));
+    }), list.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 8 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "invoice", text: "Aucune facture pour ce filtre." })))))), selected && /* @__PURE__ */ React.createElement(FactureDetail, { facture: selected, data, store, user, onClose: () => setSelected(null) }));
+  }
+  function ChargementModal({ facture, data, onClose, store, user }) {
+    const [qtes, setQtes] = useState(facture.items.map((it) => it.quantiteFacturee));
+    const submit = () => {
+      const chargements = facture.items.map((it, i) => ({ produitId: it.produitId, quantiteChargee: Math.min(Number(qtes[i]) || 0, it.quantiteFacturee) }));
+      store.confirmerChargement(facture.id, chargements, user.nom);
+      onClose();
+    };
+    return /* @__PURE__ */ React.createElement(Modal, { title: `Confirmer le chargement \u2014 ${facture.numero}`, onClose, width: 620 }, /* @__PURE__ */ React.createElement("div", { className: "table-wrap", style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Produit"), /* @__PURE__ */ React.createElement("th", null, "Factur\xE9"), /* @__PURE__ */ React.createElement("th", null, "Quantit\xE9 charg\xE9e"), /* @__PURE__ */ React.createElement("th", null, "Reste"))), /* @__PURE__ */ React.createElement("tbody", null, facture.items.map((it, i) => {
+      const p = data.produits.find((pr) => pr.id === it.produitId);
+      const reste = it.quantiteFacturee - (Number(qtes[i]) || 0);
+      return /* @__PURE__ */ React.createElement("tr", { key: i }, /* @__PURE__ */ React.createElement("td", null, p?.nom), /* @__PURE__ */ React.createElement("td", { className: "mono" }, it.quantiteFacturee), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("input", { type: "number", min: "0", max: it.quantiteFacturee, className: "mono", style: { width: 90, background: "var(--panel-2)", border: "1px solid var(--line)", borderRadius: 6, padding: "6px 8px", color: "var(--ink)" }, value: qtes[i], onChange: (e) => setQtes((q) => q.map((x, idx) => idx === i ? e.target.value : x)) })), /* @__PURE__ */ React.createElement("td", { className: "mono", style: { color: reste > 0 ? "var(--amber)" : "var(--ink-faint)" } }, reste));
+    })))), /* @__PURE__ */ React.createElement("div", { className: "alert info" }, /* @__PURE__ */ React.createElement(Icon, { name: "alert", size: 14 }), " Une quantit\xE9 charg\xE9e inf\xE9rieure au montant factur\xE9 est automatiquement enregistr\xE9e comme chargement partiel, et le reste \xE0 charger est recalcul\xE9."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement("button", { className: "btn", onClick: onClose }, "Annuler"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: submit }, "Confirmer le chargement")));
+  }
+  function ChargementPage({ store, user }) {
+    const { data } = store;
+    const [target, setTarget] = useState(null);
+    const list = data.factures.filter((f) => ["ATTENTE_CHARGEMENT", "EN_CHARGEMENT"].includes(f.statut));
+    const allowed = can(user.role, "chargement.confirm");
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Chargement"), /* @__PURE__ */ React.createElement("div", { className: "section-sub" }, "Factures pr\xEAtes \xE0 \xEAtre charg\xE9es dans leur d\xE9p\xF4t d'origine."), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Facture"), /* @__PURE__ */ React.createElement("th", null, "Client"), /* @__PURE__ */ React.createElement("th", null, "Chauffeur"), /* @__PURE__ */ React.createElement("th", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("th", null, "Produits"), /* @__PURE__ */ React.createElement("th", null, "Statut"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, list.map((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      const chf = data.chauffeurs.find((c) => c.id === f.chauffeurId);
+      const dep = data.depots.find((d) => d.id === f.depotId);
+      return /* @__PURE__ */ React.createElement("tr", { className: "row-hover", key: f.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f.numero), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", null, chf?.nom), /* @__PURE__ */ React.createElement("td", null, dep?.nom), /* @__PURE__ */ React.createElement("td", null, f.items.map((it) => data.produits.find((p) => p.id === it.produitId)?.nom + " \xD7" + it.quantiteFacturee).join(", ")), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(StatutBadge, { statut: f.statut })), /* @__PURE__ */ React.createElement("td", null, allowed ? /* @__PURE__ */ React.createElement("button", { className: "btn sm primary", onClick: () => setTarget(f) }, /* @__PURE__ */ React.createElement(Icon, { name: "loading", size: 13 }), " Charger") : /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink-faint)", fontSize: 12 } }, "Non autoris\xE9")));
+    }), list.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 7 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "loading", text: "Aucune facture en attente de chargement." })))))), target && /* @__PURE__ */ React.createElement(ChargementModal, { facture: target, data, store, user, onClose: () => setTarget(null) }));
+  }
+  function LivraisonModal({ facture, data, onClose, store, user }) {
+    const [rows, setRows] = useState(facture.items.map((it) => ({ livre: it.quantiteChargee, motif: "" })));
+    const update = (i, k, v) => setRows((r) => r.map((x, idx) => idx === i ? { ...x, [k]: v } : x));
+    const submit = () => {
+      const livraisons = facture.items.map((it, i) => {
+        const livre = Math.min(Number(rows[i].livre) || 0, it.quantiteChargee);
+        const retour = it.quantiteChargee - livre;
+        return { produitId: it.produitId, quantiteLivree: livre, quantiteRetournee: retour, motif: retour > 0 ? rows[i].motif || "Non sp\xE9cifi\xE9" : "" };
+      });
+      store.confirmerLivraison(facture.id, livraisons, user.nom);
+      onClose();
+    };
+    return /* @__PURE__ */ React.createElement(Modal, { title: `Confirmer la livraison \u2014 ${facture.numero}`, onClose, width: 660 }, /* @__PURE__ */ React.createElement("div", { className: "table-wrap", style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Produit"), /* @__PURE__ */ React.createElement("th", null, "Charg\xE9"), /* @__PURE__ */ React.createElement("th", null, "Livr\xE9"), /* @__PURE__ */ React.createElement("th", null, "Retour"), /* @__PURE__ */ React.createElement("th", null, "Motif retour"))), /* @__PURE__ */ React.createElement("tbody", null, facture.items.map((it, i) => {
+      const p = data.produits.find((pr) => pr.id === it.produitId);
+      const livre = Math.min(Number(rows[i].livre) || 0, it.quantiteChargee);
+      const retour = it.quantiteChargee - livre;
+      return /* @__PURE__ */ React.createElement("tr", { key: i }, /* @__PURE__ */ React.createElement("td", null, p?.nom), /* @__PURE__ */ React.createElement("td", { className: "mono" }, it.quantiteChargee), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("input", { type: "number", min: "0", max: it.quantiteChargee, className: "mono", style: { width: 80, background: "var(--panel-2)", border: "1px solid var(--line)", borderRadius: 6, padding: "6px 8px", color: "var(--ink)" }, value: rows[i].livre, onChange: (e) => update(i, "livre", e.target.value) })), /* @__PURE__ */ React.createElement("td", { className: "mono", style: { color: retour > 0 ? "var(--red)" : "var(--ink-faint)" } }, retour), /* @__PURE__ */ React.createElement("td", null, retour > 0 && /* @__PURE__ */ React.createElement("input", { placeholder: "Motif", style: { width: "100%", background: "var(--panel-2)", border: "1px solid var(--line)", borderRadius: 6, padding: "6px 8px", color: "var(--ink)" }, value: rows[i].motif, onChange: (e) => update(i, "motif", e.target.value) })));
+    })))), /* @__PURE__ */ React.createElement("div", { className: "alert info" }, /* @__PURE__ */ React.createElement(Icon, { name: "alert", size: 14 }), " Toute quantit\xE9 non livr\xE9e est automatiquement enregistr\xE9e comme retour et rattach\xE9e \xE0 cette facture. La facture ne sera pas cl\xF4turable tant que l'\xE9cart n'est pas justifi\xE9."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement("button", { className: "btn", onClick: onClose }, "Annuler"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: submit }, "Confirmer la livraison")));
+  }
+  function LivraisonPage({ store, user }) {
+    const { data } = store;
+    const [target, setTarget] = useState(null);
+    const [tab, setTab] = useState("livraison");
+    const list = data.factures.filter((f) => f.statut === "CHARGEE" || f.statut === "EN_LIVRAISON");
+    const retours = [...data.retours].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const allowed = can(user.role, "livraison.confirm");
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Livraison & retours"), /* @__PURE__ */ React.createElement("div", { className: "section-sub" }, "Saisie des quantit\xE9s livr\xE9es, calcul automatique des \xE9carts et des retours."), /* @__PURE__ */ React.createElement("div", { className: "tabs" }, /* @__PURE__ */ React.createElement("button", { className: `tab ${tab === "livraison" ? "active" : ""}`, onClick: () => setTab("livraison") }, "\xC0 livrer (", list.length, ")"), /* @__PURE__ */ React.createElement("button", { className: `tab ${tab === "retours" ? "active" : ""}`, onClick: () => setTab("retours") }, "Registre des retours (", retours.length, ")")), tab === "livraison" && /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Facture"), /* @__PURE__ */ React.createElement("th", null, "Client"), /* @__PURE__ */ React.createElement("th", null, "Chauffeur"), /* @__PURE__ */ React.createElement("th", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("th", null, "Statut"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, list.map((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      const chf = data.chauffeurs.find((c) => c.id === f.chauffeurId);
+      const dep = data.depots.find((d) => d.id === f.depotId);
+      return /* @__PURE__ */ React.createElement("tr", { className: "row-hover", key: f.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f.numero), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", null, chf?.nom), /* @__PURE__ */ React.createElement("td", null, dep?.nom), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(StatutBadge, { statut: f.statut })), /* @__PURE__ */ React.createElement("td", null, allowed ? /* @__PURE__ */ React.createElement("button", { className: "btn sm primary", onClick: () => setTarget(f) }, /* @__PURE__ */ React.createElement(Icon, { name: "delivery", size: 13 }), " Livraison") : /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink-faint)", fontSize: 12 } }, "Non autoris\xE9")));
+    }), list.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 6 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "delivery", text: "Aucune facture en attente de livraison." })))))), tab === "retours" && /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Facture"), /* @__PURE__ */ React.createElement("th", null, "Produit"), /* @__PURE__ */ React.createElement("th", null, "Quantit\xE9"), /* @__PURE__ */ React.createElement("th", null, "Motif"), /* @__PURE__ */ React.createElement("th", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("th", null, "Utilisateur"), /* @__PURE__ */ React.createElement("th", null, "Date"))), /* @__PURE__ */ React.createElement("tbody", null, retours.map((r) => {
+      const f = data.factures.find((x) => x.id === r.factureId);
+      const p = data.produits.find((x) => x.id === r.produitId);
+      const dep = data.depots.find((x) => x.id === r.depotId);
+      return /* @__PURE__ */ React.createElement("tr", { key: r.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f?.numero), /* @__PURE__ */ React.createElement("td", null, p?.nom), /* @__PURE__ */ React.createElement("td", { className: "mono" }, r.quantite), /* @__PURE__ */ React.createElement("td", null, r.motif), /* @__PURE__ */ React.createElement("td", null, dep?.nom), /* @__PURE__ */ React.createElement("td", null, r.utilisateur), /* @__PURE__ */ React.createElement("td", null, fmtDateTime(r.date)));
+    }), retours.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 7 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "return", text: "Aucun retour enregistr\xE9." })))))), target && /* @__PURE__ */ React.createElement(LivraisonModal, { facture: target, data, store, user, onClose: () => setTarget(null) }));
+  }
+  function CertificationPage({ store, user }) {
+    const { data } = store;
+    const [tab, setTab] = useState("attente");
+    const [rejecting, setRejecting] = useState(null);
+    const [motif, setMotif] = useState("");
+    const attente = data.factures.filter((f) => f.statut === "ATTENTE_CERTIFICATION");
+    const livreesPretes = data.factures.filter((f) => ["LIVREE_COMPLETE", "LIVREE_PARTIELLE"].includes(f.statut));
+    const certifiees = data.factures.filter((f) => ["CERTIFIEE", "REJETEE"].includes(f.statut));
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Certification"), /* @__PURE__ */ React.createElement("div", { className: "section-sub" }, "\xC9tape finale \u2014 une facture certifi\xE9e devient en lecture seule pour les utilisateurs ordinaires."), /* @__PURE__ */ React.createElement("div", { className: "tabs" }, /* @__PURE__ */ React.createElement("button", { className: `tab ${tab === "pretes" ? "active" : ""}`, onClick: () => setTab("pretes") }, "Livr\xE9es \u2014 \xE0 envoyer (", livreesPretes.length, ")"), /* @__PURE__ */ React.createElement("button", { className: `tab ${tab === "attente" ? "active" : ""}`, onClick: () => setTab("attente") }, "En attente de certification (", attente.length, ")"), /* @__PURE__ */ React.createElement("button", { className: `tab ${tab === "historique" ? "active" : ""}`, onClick: () => setTab("historique") }, "Historique (", certifiees.length, ")")), tab === "pretes" && /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Facture"), /* @__PURE__ */ React.createElement("th", null, "Client"), /* @__PURE__ */ React.createElement("th", null, "Statut livraison"), /* @__PURE__ */ React.createElement("th", null, "Montant"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, livreesPretes.map((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      return /* @__PURE__ */ React.createElement("tr", { key: f.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f.numero), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(StatutBadge, { statut: f.statut })), /* @__PURE__ */ React.createElement("td", { className: "mono" }, fmtMoney(f.montantTotal)), /* @__PURE__ */ React.createElement("td", null, can(user.role, "certification.send") && /* @__PURE__ */ React.createElement("button", { className: "btn sm", onClick: () => store.envoyerCertification(f.id, user.nom) }, "Envoyer pour certification")));
+    }), livreesPretes.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 5 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "certify", text: "Rien \xE0 envoyer pour le moment." })))))), tab === "attente" && /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Facture"), /* @__PURE__ */ React.createElement("th", null, "Client"), /* @__PURE__ */ React.createElement("th", null, "Montant"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, attente.map((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      return /* @__PURE__ */ React.createElement("tr", { key: f.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f.numero), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", { className: "mono" }, fmtMoney(f.montantTotal)), /* @__PURE__ */ React.createElement("td", { style: { display: "flex", gap: 6 } }, user.role === "ADMIN" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { className: "btn sm primary", onClick: () => store.certifierFacture(f.id, "approve", user.nom) }, /* @__PURE__ */ React.createElement(Icon, { name: "check", size: 13 }), " Certifier"), /* @__PURE__ */ React.createElement("button", { className: "btn sm danger", onClick: () => setRejecting(f) }, /* @__PURE__ */ React.createElement(Icon, { name: "x", size: 13 }), " Rejeter")), user.role !== "ADMIN" && /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink-faint)", fontSize: 12 } }, "R\xE9serv\xE9 \xE0 l'Administrateur")));
+    }), attente.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 4 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "clock", text: "Aucune facture en attente." })))))), tab === "historique" && /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Facture"), /* @__PURE__ */ React.createElement("th", null, "Client"), /* @__PURE__ */ React.createElement("th", null, "R\xE9sultat"), /* @__PURE__ */ React.createElement("th", null, "Montant"))), /* @__PURE__ */ React.createElement("tbody", null, certifiees.map((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      return /* @__PURE__ */ React.createElement("tr", { key: f.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, f.numero), /* @__PURE__ */ React.createElement("td", null, cli?.nom), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(StatutBadge, { statut: f.statut })), /* @__PURE__ */ React.createElement("td", { className: "mono" }, fmtMoney(f.montantTotal)));
+    }), certifiees.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 4 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "certify", text: "Aucun historique." })))))), rejecting && /* @__PURE__ */ React.createElement(Modal, { title: `Rejeter ${rejecting.numero}`, onClose: () => setRejecting(null) }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Motif du rejet *"), /* @__PURE__ */ React.createElement("textarea", { rows: 3, value: motif, onChange: (e) => setMotif(e.target.value), placeholder: "Pr\xE9cisez la correction attendue\u2026" })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement("button", { className: "btn", onClick: () => setRejecting(null) }, "Annuler"), /* @__PURE__ */ React.createElement("button", { className: "btn danger", disabled: !motif, onClick: () => {
+      store.certifierFacture(rejecting.id, "reject", user.nom, motif);
+      setRejecting(null);
+      setMotif("");
+    } }, "Confirmer le rejet"))));
+  }
+  function EntreeStockForm({ store, user, data, onClose, depotDefault }) {
+    const [depotId, setDepotId] = useState(depotDefault || data.depots[0]?.id || "");
+    const [produitId, setProduitId] = useState("");
+    const [quantite, setQuantite] = useState("");
+    const [fournisseur, setFournisseur] = useState(data.fournisseurs[0] || "");
+    const [refDocument, setRefDocument] = useState("");
+    const [factureFournisseur, setFactureFournisseur] = useState("");
+    const [observations, setObservations] = useState("");
+    const submit = () => {
+      if (!depotId || !produitId || !Number(quantite)) return;
+      store.creerEntreeStock({ depotId, produitId, quantite: Number(quantite), fournisseur, refDocument, factureFournisseur, observations }, user.nom);
+      onClose();
+    };
+    return /* @__PURE__ */ React.createElement(Modal, { title: "Nouvelle entr\xE9e de stock", onClose }, /* @__PURE__ */ React.createElement("div", { className: "field-row" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "D\xE9p\xF4t *"), /* @__PURE__ */ React.createElement("select", { value: depotId, onChange: (e) => setDepotId(e.target.value) }, data.depots.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.id, value: d.id }, d.nom)))), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Produit *"), /* @__PURE__ */ React.createElement("select", { value: produitId, onChange: (e) => setProduitId(e.target.value) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "S\xE9lectionner\u2026"), data.produits.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.id, value: p.id }, p.nom, " (", p.sku, ")"))))), /* @__PURE__ */ React.createElement("div", { className: "field-row" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Quantit\xE9 re\xE7ue *"), /* @__PURE__ */ React.createElement("input", { type: "number", min: "1", value: quantite, onChange: (e) => setQuantite(e.target.value) })), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Fournisseur"), /* @__PURE__ */ React.createElement("select", { value: fournisseur, onChange: (e) => setFournisseur(e.target.value) }, data.fournisseurs.map((f) => /* @__PURE__ */ React.createElement("option", { key: f }, f))))), /* @__PURE__ */ React.createElement("div", { className: "field-row" }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "R\xE9f\xE9rence document"), /* @__PURE__ */ React.createElement("input", { value: refDocument, onChange: (e) => setRefDocument(e.target.value), placeholder: "BL-XXXX" })), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "N\xB0 facture fournisseur"), /* @__PURE__ */ React.createElement("input", { value: factureFournisseur, onChange: (e) => setFactureFournisseur(e.target.value), placeholder: "FF-XXXX" }))), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Observations"), /* @__PURE__ */ React.createElement("textarea", { rows: 2, value: observations, onChange: (e) => setObservations(e.target.value) })), /* @__PURE__ */ React.createElement("div", { className: "alert info" }, /* @__PURE__ */ React.createElement(Icon, { name: "alert", size: 14 }), " L'entr\xE9e augmente imm\xE9diatement le stock physique et le stock valid\xE9 comptablement de ce d\xE9p\xF4t."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement("button", { className: "btn", onClick: onClose }, "Annuler"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: submit, disabled: !depotId || !produitId || !Number(quantite) }, "Enregistrer l'entr\xE9e")));
+  }
+  function ModifierEntreeModal({ entry, onClose, store, user }) {
+    const [qty, setQty] = useState(entry.quantite);
+    const [adminAutorisant, setAdminAutorisant] = useState("");
+    const [motif, setMotif] = useState("");
+    const submit = () => {
+      if (!adminAutorisant || !motif) return;
+      store.modifierEntreeStock(entry.id, Number(qty), user.nom, adminAutorisant, motif);
+      onClose();
+    };
+    return /* @__PURE__ */ React.createElement(Modal, { title: `Modifier l'entr\xE9e ${entry.numero}`, onClose }, /* @__PURE__ */ React.createElement("div", { className: "alert warn" }, /* @__PURE__ */ React.createElement(Icon, { name: "lock", size: 14 }), " R\xE9serv\xE9 \xE0 l'Administrateur. Toute modification est trac\xE9e dans le journal d'audit (ancienne/nouvelle quantit\xE9, motif, autorisation)."), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Nouvelle quantit\xE9"), /* @__PURE__ */ React.createElement("input", { type: "number", value: qty, onChange: (e) => setQty(e.target.value) })), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Administrateur autorisant *"), /* @__PURE__ */ React.createElement("input", { value: adminAutorisant, onChange: (e) => setAdminAutorisant(e.target.value), placeholder: "Nom de l'administrateur" })), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Motif de la modification *"), /* @__PURE__ */ React.createElement("textarea", { rows: 2, value: motif, onChange: (e) => setMotif(e.target.value) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement("button", { className: "btn", onClick: onClose }, "Annuler"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: submit, disabled: !adminAutorisant || !motif }, "Confirmer la modification")));
+  }
+  function StockPage({ store, user }) {
+    const { data } = store;
+    const [depotFilter, setDepotFilter] = useState("TOUS");
+    const [showEntry, setShowEntry] = useState(false);
+    const [editEntry, setEditEntry] = useState(null);
+    const [tab, setTab] = useState("disponibilite");
+    const visibleDepots = user.role === "ADMIN" || user.role === "RESP_FACTURES" ? data.depots : data.depots.filter((d) => d.id === user.depotId);
+    const depots = depotFilter === "TOUS" ? visibleDepots : visibleDepots.filter((d) => d.id === depotFilter);
+    const canCreateEntry = can(user.role, "stock.create_entry");
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Stock & d\xE9p\xF4ts"), /* @__PURE__ */ React.createElement("div", { className: "section-sub", style: { margin: 0 } }, "Stock disponible = stock valid\xE9 \u2212 stock r\xE9serv\xE9.")), canCreateEntry && /* @__PURE__ */ React.createElement("button", { className: "btn primary", style: { marginLeft: "auto" }, onClick: () => setShowEntry(true) }, /* @__PURE__ */ React.createElement(Icon, { name: "plus", size: 15 }), " Entr\xE9e de stock")), /* @__PURE__ */ React.createElement("div", { className: "tabs" }, /* @__PURE__ */ React.createElement("button", { className: `tab ${tab === "disponibilite" ? "active" : ""}`, onClick: () => setTab("disponibilite") }, "Disponibilit\xE9"), /* @__PURE__ */ React.createElement("button", { className: `tab ${tab === "entrees" ? "active" : ""}`, onClick: () => setTab("entrees") }, "Entr\xE9es de stock")), visibleDepots.length > 1 && /* @__PURE__ */ React.createElement("div", { className: "chip-row" }, /* @__PURE__ */ React.createElement("button", { className: `chip ${depotFilter === "TOUS" ? "active" : ""}`, onClick: () => setDepotFilter("TOUS") }, "Tous les d\xE9p\xF4ts"), visibleDepots.map((d) => /* @__PURE__ */ React.createElement("button", { key: d.id, className: `chip ${depotFilter === d.id ? "active" : ""}`, onClick: () => setDepotFilter(d.id) }, d.nom))), tab === "disponibilite" && depots.map((dep) => /* @__PURE__ */ React.createElement("div", { className: "card", key: dep.id, style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icon, { name: "warehouse", size: 15 }), " ", dep.nom), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: "var(--ink-faint)", fontWeight: 500 } }, "Responsable: ", dep.responsable)), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Produit"), /* @__PURE__ */ React.createElement("th", null, "Physique"), /* @__PURE__ */ React.createElement("th", null, "R\xE9serv\xE9"), /* @__PURE__ */ React.createElement("th", null, "Valid\xE9"), /* @__PURE__ */ React.createElement("th", null, "Disponible"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, data.stocks.filter((s) => s.depotId === dep.id).map((s) => {
+      const p = data.produits.find((pr) => pr.id === s.produitId);
+      const dispo = s.quantiteValidee - s.quantiteReservee;
+      const bas = s.quantitePhysique <= (p?.seuilBas || 0);
+      return /* @__PURE__ */ React.createElement("tr", { key: s.id }, /* @__PURE__ */ React.createElement("td", null, p?.nom, " ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink-faint)", fontSize: 11 } }, "(", p?.sku, ")")), /* @__PURE__ */ React.createElement("td", { className: "mono" }, s.quantitePhysique), /* @__PURE__ */ React.createElement("td", { className: "mono" }, s.quantiteReservee), /* @__PURE__ */ React.createElement("td", { className: "mono" }, s.quantiteValidee), /* @__PURE__ */ React.createElement("td", { className: "mono", style: { color: dispo <= 0 ? "var(--red)" : void 0 } }, dispo), /* @__PURE__ */ React.createElement("td", null, s.quantitePhysique <= 0 ? /* @__PURE__ */ React.createElement("span", { className: "badge b-red" }, "Rupture") : bas ? /* @__PURE__ */ React.createElement("span", { className: "badge b-amber" }, "Bas") : /* @__PURE__ */ React.createElement("span", { className: "badge b-green" }, "OK")));
+    })))))), tab === "entrees" && /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "N\xB0 Entr\xE9e"), /* @__PURE__ */ React.createElement("th", null, "Date"), /* @__PURE__ */ React.createElement("th", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("th", null, "Produit"), /* @__PURE__ */ React.createElement("th", null, "Qt\xE9"), /* @__PURE__ */ React.createElement("th", null, "Fournisseur"), /* @__PURE__ */ React.createElement("th", null, "Utilisateur"), user.role === "ADMIN" && /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, data.stockEntries.filter((e) => depotFilter === "TOUS" || e.depotId === depotFilter).map((e) => {
+      const dep = data.depots.find((d) => d.id === e.depotId);
+      const p = data.produits.find((pr) => pr.id === e.produitId);
+      return /* @__PURE__ */ React.createElement("tr", { key: e.id }, /* @__PURE__ */ React.createElement("td", { className: "mono" }, e.numero), /* @__PURE__ */ React.createElement("td", null, fmtDateTime(e.date)), /* @__PURE__ */ React.createElement("td", null, dep?.nom), /* @__PURE__ */ React.createElement("td", null, p?.nom), /* @__PURE__ */ React.createElement("td", { className: "mono" }, e.quantite), /* @__PURE__ */ React.createElement("td", null, e.fournisseur), /* @__PURE__ */ React.createElement("td", null, e.utilisateur), user.role === "ADMIN" && /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("button", { className: "btn ghost sm", onClick: () => setEditEntry(e) }, /* @__PURE__ */ React.createElement(Icon, { name: "edit", size: 13 }))));
+    })))), showEntry && /* @__PURE__ */ React.createElement(EntreeStockForm, { store, user, data, depotDefault: user.depotId, onClose: () => setShowEntry(false) }), editEntry && /* @__PURE__ */ React.createElement(ModifierEntreeModal, { entry: editEntry, store, user, onClose: () => setEditEntry(null) }));
+  }
+  function UserForm({ store, user, data, onClose }) {
+    const [nom, setNom] = useState("");
+    const [role, setRole] = useState("ASSISTANT");
+    const [depotId, setDepotId] = useState(data.depots[0]?.id || "");
+    const submit = () => {
+      if (!nom) return;
+      store.addUser({ nom, role, depotId: role === "ADMIN" || role === "RESP_FACTURES" ? null : depotId }, user.nom);
+      onClose();
+    };
+    return /* @__PURE__ */ React.createElement(Modal, { title: "Nouvel utilisateur", onClose }, /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "Nom complet *"), /* @__PURE__ */ React.createElement("input", { value: nom, onChange: (e) => setNom(e.target.value) })), /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "R\xF4le"), /* @__PURE__ */ React.createElement("select", { value: role, onChange: (e) => setRole(e.target.value) }, Object.entries(ROLES).map(([k, v]) => /* @__PURE__ */ React.createElement("option", { key: k, value: k }, v.label)))), (role === "CHEF_DEPOT" || role === "ASSISTANT") && /* @__PURE__ */ React.createElement("div", { className: "field" }, /* @__PURE__ */ React.createElement("label", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("select", { value: depotId, onChange: (e) => setDepotId(e.target.value) }, data.depots.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.id, value: d.id }, d.nom)))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement("button", { className: "btn", onClick: onClose }, "Annuler"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", disabled: !nom, onClick: submit }, "Cr\xE9er l'utilisateur")));
+  }
+  function UtilisateursPage({ store, user }) {
+    const { data } = store;
+    const [showForm, setShowForm] = useState(false);
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Utilisateurs & r\xF4les"), /* @__PURE__ */ React.createElement("div", { className: "section-sub", style: { margin: 0 } }, "Acc\xE8s r\xE9serv\xE9 \xE0 l'Administrateur.")), /* @__PURE__ */ React.createElement("button", { className: "btn primary", style: { marginLeft: "auto" }, onClick: () => setShowForm(true) }, /* @__PURE__ */ React.createElement(Icon, { name: "plus", size: 15 }), " Nouvel utilisateur")), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Nom"), /* @__PURE__ */ React.createElement("th", null, "R\xF4le"), /* @__PURE__ */ React.createElement("th", null, "D\xE9p\xF4t"), /* @__PURE__ */ React.createElement("th", null, "Statut"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, data.users.map((u) => {
+      const dep = data.depots.find((d) => d.id === u.depotId);
+      return /* @__PURE__ */ React.createElement("tr", { key: u.id }, /* @__PURE__ */ React.createElement("td", null, u.nom), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("span", { className: "badge b-blue", style: { color: ROLES[u.role]?.color } }, ROLES[u.role]?.label)), /* @__PURE__ */ React.createElement("td", null, dep?.nom || "\u2014"), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("span", { className: `badge b-${u.actif ? "green" : "gray"}` }, u.actif ? "Actif" : "Inactif")), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("button", { className: "btn sm", onClick: () => store.toggleUser(u.id, user.nom) }, u.actif ? "D\xE9sactiver" : "Activer")));
+    })))), showForm && /* @__PURE__ */ React.createElement(UserForm, { store, user, data, onClose: () => setShowForm(false) }));
+  }
+  function AuditPage({ store }) {
+    const { data } = store;
+    const [q, setQ] = useState("");
+    const list = data.auditLogs.filter((l) => {
+      const s = q.toLowerCase();
+      return !s || l.entite.toLowerCase().includes(s) || l.entiteId.toLowerCase().includes(s) || l.utilisateur.toLowerCase().includes(s) || l.action.toLowerCase().includes(s);
+    });
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Journal d'audit"), /* @__PURE__ */ React.createElement("div", { className: "section-sub" }, "Tra\xE7abilit\xE9 compl\xE8te \u2014 non modifiable, acc\xE8s Administrateur."), /* @__PURE__ */ React.createElement("div", { className: "search-box", style: { maxWidth: 340, marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Icon, { name: "search", size: 15 }), /* @__PURE__ */ React.createElement("input", { placeholder: "Filtrer par entit\xE9, action, utilisateur\u2026", value: q, onChange: (e) => setQ(e.target.value) })), /* @__PURE__ */ React.createElement("div", { className: "table-wrap" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Date"), /* @__PURE__ */ React.createElement("th", null, "Entit\xE9"), /* @__PURE__ */ React.createElement("th", null, "R\xE9f\xE9rence"), /* @__PURE__ */ React.createElement("th", null, "Action"), /* @__PURE__ */ React.createElement("th", null, "Utilisateur"), /* @__PURE__ */ React.createElement("th", null, "D\xE9tails"))), /* @__PURE__ */ React.createElement("tbody", null, list.map((l) => /* @__PURE__ */ React.createElement("tr", { key: l.id }, /* @__PURE__ */ React.createElement("td", { style: { whiteSpace: "nowrap" } }, fmtDateTime(l.date)), /* @__PURE__ */ React.createElement("td", null, l.entite), /* @__PURE__ */ React.createElement("td", { className: "mono" }, l.entiteId), /* @__PURE__ */ React.createElement("td", null, l.action), /* @__PURE__ */ React.createElement("td", null, l.utilisateur), /* @__PURE__ */ React.createElement("td", { style: { color: "var(--ink-faint)", maxWidth: 320 } }, l.details))), list.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 6 }, /* @__PURE__ */ React.createElement(EmptyState, { icon: "audit", text: "Aucune entr\xE9e d'audit." })))))));
+  }
+  function SearchPage({ store, initialQuery, setPage }) {
+    const { data } = store;
+    const [q, setQ] = useState(initialQuery || "");
+    const s = q.trim().toLowerCase();
+    const factures = s ? data.factures.filter((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      const chf = data.chauffeurs.find((c) => c.id === f.chauffeurId);
+      return f.numero.toLowerCase().includes(s) || cli?.nom.toLowerCase().includes(s) || chf?.nom.toLowerCase().includes(s);
+    }) : [];
+    const commandes = s ? data.commandes.filter((c) => c.numero.toLowerCase().includes(s)) : [];
+    const chauffeurs = s ? data.chauffeurs.filter((c) => c.nom.toLowerCase().includes(s) || c.telephone.includes(s) || (c.plaque || "").toLowerCase().includes(s)) : [];
+    const clients = s ? data.clients.filter((c) => c.nom.toLowerCase().includes(s) || c.telephone.includes(s)) : [];
+    const produits = s ? data.produits.filter((p) => p.nom.toLowerCase().includes(s) || p.sku.toLowerCase().includes(s)) : [];
+    const totalResults = factures.length + commandes.length + chauffeurs.length + clients.length + produits.length;
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "section-title", style: { marginBottom: 2 } }, "Recherche globale"), /* @__PURE__ */ React.createElement("div", { className: "section-sub" }, "Num\xE9ro de facture, commande, client, chauffeur, t\xE9l\xE9phone, plaque, produit, SKU\u2026"), /* @__PURE__ */ React.createElement("div", { className: "search-box", style: { maxWidth: 480, marginBottom: 20 } }, /* @__PURE__ */ React.createElement(Icon, { name: "search", size: 15 }), /* @__PURE__ */ React.createElement("input", { autoFocus: true, value: q, onChange: (e) => setQ(e.target.value), placeholder: "Tapez pour rechercher\u2026" })), !s && /* @__PURE__ */ React.createElement(EmptyState, { icon: "search", text: "Commencez \xE0 taper pour rechercher dans toute l'application." }), s && totalResults === 0 && /* @__PURE__ */ React.createElement(EmptyState, { icon: "search", text: "Aucun r\xE9sultat." }), factures.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "card", style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Factures (", factures.length, ")"), factures.slice(0, 6).map((f) => {
+      const cli = data.clients.find((c) => c.id === f.clientId);
+      return /* @__PURE__ */ React.createElement("div", { key: f.id, className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl mono" }, f.numero, " \u2014 ", cli?.nom), /* @__PURE__ */ React.createElement(StatutBadge, { statut: f.statut }));
+    })), commandes.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "card", style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Commandes (", commandes.length, ")"), commandes.slice(0, 6).map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl mono" }, c.numero), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtDate(c.date))))), chauffeurs.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "card", style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Chauffeurs (", chauffeurs.length, ")"), chauffeurs.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, c.nom, " \u2014 ", c.plaque), /* @__PURE__ */ React.createElement("span", { className: "val" }, c.telephone)))), clients.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "card", style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Clients (", clients.length, ")"), clients.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, c.nom), /* @__PURE__ */ React.createElement("span", { className: "val" }, c.telephone)))), produits.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "card" }, /* @__PURE__ */ React.createElement("div", { className: "card-title" }, "Produits (", produits.length, ")"), produits.map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, className: "stat-line" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, p.nom, " (", p.sku, ")"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtMoney(p.prix))))));
+  }
+  const PAGE_TITLES = {
+    dashboard: ["Tableau de bord", "Vue d'ensemble en temps r\xE9el"],
+    search: ["Recherche globale", null],
+    chauffeurs: ["Chauffeurs", "Profils r\xE9utilisables et documents"],
+    commandes: ["Commandes", "Cr\xE9ation et validation automatique"],
+    factures: ["Factures", "Registre \xE9lectronique"],
+    chargement: ["Chargement", "Confirmation des quantit\xE9s charg\xE9es"],
+    livraison: ["Livraison & retours", "Confirmation des quantit\xE9s livr\xE9es"],
+    certification: ["Certification", "\xC9tape finale de la facture"],
+    stock: ["Stock & d\xE9p\xF4ts", "Disponibilit\xE9 par d\xE9p\xF4t"],
+    utilisateurs: ["Utilisateurs", "Gestion des r\xF4les"],
+    audit: ["Journal d'audit", "Tra\xE7abilit\xE9 compl\xE8te"]
+  };
+  function App() {
+    const store = useStore();
+    const { data } = store;
+    const [page, setPage] = useState("dashboard");
+    const [collapsed, setCollapsed] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [currentUser, setCurrentUser] = useState(data.users[0]);
+    const [searchQuery, setSearchQuery] = useState("");
+    useEffect(() => {
+      const fresh = data.users.find((u) => u.id === currentUser?.id);
+      if (fresh && fresh !== currentUser) setCurrentUser(fresh);
+    }, [data.users]);
+    const role = currentUser?.role || "ADMIN";
+    const counts = {
+      chargement: data.factures.filter((f) => ["ATTENTE_CHARGEMENT", "EN_CHARGEMENT"].includes(f.statut)).length || void 0,
+      livraison: data.factures.filter((f) => ["CHARGEE", "EN_LIVRAISON"].includes(f.statut)).length || void 0,
+      certification: (role === "ADMIN" ? data.factures.filter((f) => f.statut === "ATTENTE_CERTIFICATION").length : 0) || void 0
+    };
+    const goSearch = (q) => {
+      setSearchQuery(q);
+      setPage("search");
+    };
+    let pageEl = null;
+    switch (page) {
+      case "dashboard":
+        pageEl = /* @__PURE__ */ React.createElement(DashboardPage, { store, setPage });
+        break;
+      case "search":
+        pageEl = /* @__PURE__ */ React.createElement(SearchPage, { store, initialQuery: searchQuery, setPage });
+        break;
+      case "chauffeurs":
+        pageEl = /* @__PURE__ */ React.createElement(ChauffeursPage, { store, user: currentUser });
+        break;
+      case "commandes":
+        pageEl = /* @__PURE__ */ React.createElement(CommandesPage, { store, user: currentUser });
+        break;
+      case "factures":
+        pageEl = /* @__PURE__ */ React.createElement(FacturesPage, { store, user: currentUser });
+        break;
+      case "chargement":
+        pageEl = /* @__PURE__ */ React.createElement(ChargementPage, { store, user: currentUser });
+        break;
+      case "livraison":
+        pageEl = /* @__PURE__ */ React.createElement(LivraisonPage, { store, user: currentUser });
+        break;
+      case "certification":
+        pageEl = /* @__PURE__ */ React.createElement(CertificationPage, { store, user: currentUser });
+        break;
+      case "stock":
+        pageEl = /* @__PURE__ */ React.createElement(StockPage, { store, user: currentUser });
+        break;
+      case "utilisateurs":
+        pageEl = role === "ADMIN" ? /* @__PURE__ */ React.createElement(UtilisateursPage, { store, user: currentUser }) : /* @__PURE__ */ React.createElement(EmptyState, { icon: "lock", text: "Acc\xE8s r\xE9serv\xE9 \xE0 l'Administrateur." });
+        break;
+      case "audit":
+        pageEl = role === "ADMIN" ? /* @__PURE__ */ React.createElement(AuditPage, { store }) : /* @__PURE__ */ React.createElement(EmptyState, { icon: "lock", text: "Acc\xE8s r\xE9serv\xE9 \xE0 l'Administrateur." });
+        break;
+      default:
+        pageEl = null;
+    }
+    const [title, sub] = PAGE_TITLES[page] || ["", ""];
+    return /* @__PURE__ */ React.createElement("div", { className: "app-shell" }, /* @__PURE__ */ React.createElement("style", null, `
+        .mobile-only{display:none;}
+        @media (max-width:860px){ .mobile-only{display:inline-flex;} }
+      `), mobileOpen && /* @__PURE__ */ React.createElement("div", { onClick: () => setMobileOpen(false), style: { position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 35 } }), /* @__PURE__ */ React.createElement(Sidebar, { page, setPage, collapsed, setCollapsed, role, counts, mobileOpen, setMobileOpen }), /* @__PURE__ */ React.createElement("div", { className: "main" }, /* @__PURE__ */ React.createElement(Topbar, { title, sub, role, users: data.users, currentUser, setCurrentUser, onSearch: goSearch, setMobileOpen }), /* @__PURE__ */ React.createElement("div", { className: "content" }, pageEl)));
+  }
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  root.render(/* @__PURE__ */ React.createElement(App, null));
+})();
+
+</script>
+</body>
+</html>
