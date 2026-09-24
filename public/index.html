@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ht">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads Business Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* vert / beige / olive / noir / bleu / kaki */
+    --bg:#EFE9D8;        /* beige, paper-ish */
+    --ink:#1E241C;        /* near-black, green-tinted */
+    --muted:#5B5A46;      /* muted olive-brown for secondary text */
+    --olive:#5C6B41;      /* olive — structural accent */
+    --deep-green:#2F4A34; /* vert — primary action */
+    --khaki:#B8A876;      /* kaki — secondary accent / borders */
+    --navy:#2B3A55;       /* bleu — links / info */
+    --danger:#8C3B2E;     /* clay-red, kept muted to fit the palette */
+    --border:#C9BE9E;
+    --panel:#F6F2E6;      /* slightly lighter beige for input fields */
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Inter",-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  h1,h2{font-family:"Fraunces",Georgia,serif;font-weight:600;letter-spacing:-0.01em;}
+  header{padding:20px 28px;border-bottom:2px solid var(--ink);display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header h1{font-size:21px;margin:0;color:var(--deep-green);}
+  header .tag{color:var(--muted);font-size:11px;font-family:"JetBrains Mono",monospace;}
+  nav{display:flex;gap:18px;align-items:baseline;}
+  nav button{background:none;border:none;color:var(--muted);padding:2px 0;cursor:pointer;font-size:13px;font-family:"Inter",sans-serif;border-bottom:2px solid transparent;}
+  nav button.active{color:var(--deep-green);border-bottom-color:var(--olive);font-weight:600;}
+  main{max-width:820px;margin:0 auto;padding:32px 28px 60px;}
+  .card{border-top:1px solid var(--border);padding:22px 0;margin-bottom:0;}
+  .card + .card{border-top:1px solid var(--border);}
+  .card h2{margin:0 0 12px;font-size:18px;font-weight:600;color:var(--ink);padding-left:14px;border-left:3px solid var(--khaki);}
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;text-transform:none;}
+  input,select{width:100%;padding:9px 10px;border-radius:3px;border:1px solid var(--border);background:var(--panel);color:var(--ink);font-size:14px;font-family:inherit;}
+  input:focus,select:focus{outline:2px solid var(--olive);outline-offset:1px;}
+  button.primary{margin-top:16px;background:var(--deep-green);border:1px solid var(--deep-green);color:#F3EFDD;font-weight:600;padding:10px 18px;border-radius:3px;cursor:pointer;font-size:14px;}
+  button.primary:hover{background:#243B29;}
+  button.secondary{margin-top:16px;background:transparent;border:1px solid var(--navy);color:var(--navy);font-weight:600;padding:10px 18px;border-radius:3px;cursor:pointer;font-size:14px;margin-left:10px;}
+  button.small{padding:5px 11px;font-size:12px;border-radius:3px;border:1px solid var(--olive);background:transparent;color:var(--olive);cursor:pointer;}
+  table{width:100%;border-collapse:collapse;margin-top:8px;}
+  th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--border);font-size:13px;}
+  th{color:var(--muted);font-weight:500;font-size:11px;font-family:"JetBrains Mono",monospace;}
+  .badge{padding:2px 9px;border-radius:3px;font-size:11px;font-weight:600;font-family:"JetBrains Mono",monospace;border:1px solid currentColor;}
+  .badge.active{color:var(--deep-green);}
+  .badge.trialing{color:var(--navy);}
+  .badge.suspended, .badge.past_due{color:var(--danger);}
+  .msg{padding:10px 12px;border-left:3px solid;font-size:13px;margin-top:10px;background:var(--panel);}
+  .msg.err{border-color:var(--danger);color:var(--danger);}
+  .msg.ok{border-color:var(--deep-green);color:var(--deep-green);}
+  .hidden{display:none !important;}
+  .row{display:flex;gap:10px;}
+  .row > div{flex:1;}
+  .muted{color:var(--muted);font-size:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Leads Business Platform</h1>
+    <div class="tag" id="apiTag">API: http://localhost:4000</div>
+  </div>
+  <nav id="topNav"></nav>
+</header>
+
+<main>
+
+  <!-- ===================== LANDING / CHOICE ===================== -->
+  <section id="view-landing">
+    <div class="card">
+      <h2>Byenveni</h2>
+      <p class="muted">Chwazi si w se pwopriyetè platfòm nan, oswa yon biznis k ap itilize li.</p>
+      <button class="primary" onclick="go('platform-login')">Platform Owner / Super Admin</button>
+      <button class="secondary" onclick="go('business-choice')">Mwen se yon Biznis</button>
+    </div>
+  </section>
+
+  <!-- ===================== BUSINESS CHOICE ===================== -->
+  <section id="view-business-choice" class="hidden">
+    <div class="card">
+      <h2>Biznis</h2>
+      <button class="primary" onclick="go('business-signup')">Kreye yon nouvo biznis</button>
+      <button class="secondary" onclick="go('business-login')">Konekte nan biznis mwen</button>
+    </div>
+  </section>
+
+  <!-- ===================== PLATFORM: BOOTSTRAP / LOGIN ===================== -->
+  <section id="view-platform-login" class="hidden">
+    <div class="card">
+      <h2>Platform Owner — Premye enstalasyon</h2>
+      <p class="muted">Si se premye fwa, kreye kont Platform Owner la anba a. Si li deja egziste, sote desann pou konekte.</p>
+      <label>Non</label><input id="bs_name" placeholder="Non ou">
+      <label>Imèl</label><input id="bs_email" placeholder="imel@egzanp.com">
+      <label>Modpas</label><input id="bs_password" type="password">
+      <button class="primary" onclick="bootstrapOwner()">Kreye Platform Owner</button>
+      <div id="bootstrapMsg"></div>
+    </div>
+    <div class="card">
+      <h2>Konekte (Platform Owner / Super Admin)</h2>
+      <label>Imèl</label><input id="pl_email">
+      <label>Modpas</label><input id="pl_password" type="password">
+      <button class="primary" onclick="platformLogin()">Konekte</button>
+      <div id="platformLoginMsg"></div>
+    </div>
+  </section>
+
+  <!-- ===================== PLATFORM: DASHBOARD ===================== -->
+  <section id="view-platform-dashboard" class="hidden">
+    <div class="card">
+      <h2>Biznis sou platfòm nan</h2>
+      <table>
+        <thead><tr><th>Non</th><th>Kalite</th><th>Estati</th><th>Abònman</th><th></th></tr></thead>
+        <tbody id="businessesTable"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Plan abònman</h2>
+      <div class="row">
+        <div><label>Non plan</label><input id="pln_name" placeholder="Ex: Standard"></div>
+        <div><label>Pri (HTG)</label><input id="pln_price" type="number" placeholder="2500"></div>
+      </div>
+      <button class="primary" onclick="createPlan()">Kreye plan</button>
+      <div id="planMsg"></div>
+      <table>
+        <thead><tr><th>Non</th><th>Pri (HTG)</th><th>Peryòd</th></tr></thead>
+        <tbody id="plansTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== BUSINESS: SIGNUP ===================== -->
+  <section id="view-business-signup" class="hidden">
+    <div class="card">
+      <h2>Kreye biznis ou</h2>
+      <label>Non biznis</label><input id="su_bizname" placeholder="Ex: Boutik Marie">
+      <label>Kalite biznis</label>
+      <select id="su_biztype">
+        <option value="boutik">Boutik / Kòmès jeneral</option>
+        <option value="restoran">Restoran / Bar</option>
+        <option value="depo">Depo / Distribisyon</option>
+        <option value="lòt">Lòt</option>
+      </select>
+      <label>Non ou (Business Admin)</label><input id="su_name">
+      <label>Imèl</label><input id="su_email">
+      <label>Modpas</label><input id="su_password" type="password">
+      <button class="primary" onclick="businessSignup()">Kreye biznis la</button>
+      <div id="signupMsg"></div>
+    </div>
+  </section>
+
+  <!-- ===================== BUSINESS: LOGIN ===================== -->
+  <section id="view-business-login" class="hidden">
+    <div class="card">
+      <h2>Konekte nan biznis ou</h2>
+      <label>Imèl</label><input id="bl_email">
+      <label>Modpas</label><input id="bl_password" type="password">
+      <button class="primary" onclick="businessLogin()">Konekte</button>
+      <div id="businessLoginMsg"></div>
+    </div>
+  </section>
+
+  <!-- ===================== BUSINESS: DASHBOARD ===================== -->
+  <section id="view-business-dashboard" class="hidden">
+    <div class="card">
+      <h2 id="bizNameHeader">Biznis</h2>
+      <p class="muted" id="bizRoleLine"></p>
+    </div>
+
+    <div class="card">
+      <h2>Itilizatè yo</h2>
+      <table><thead><tr><th>Non</th><th>Imèl</th><th>Wòl</th><th>Estati</th></tr></thead>
+        <tbody id="usersTable"></tbody></table>
+      <div class="row" style="margin-top:14px;">
+        <div><label>Non</label><input id="u_name"></div>
+        <div><label>Imèl</label><input id="u_email"></div>
+      </div>
+      <div class="row">
+        <div><label>Modpas</label><input id="u_password" type="password"></div>
+        <div><label>Wòl</label>
+          <select id="u_role">
+            <option value="manager">Manager</option>
+            <option value="business_user">Business User</option>
+          </select>
+        </div>
+      </div>
+      <button class="primary" onclick="createBusinessUser()">Ajoute itilizatè</button>
+      <div id="userMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Depo / Branch</h2>
+      <table><thead><tr><th>Non</th><th>Prensipal?</th></tr></thead>
+        <tbody id="depotsTable"></tbody></table>
+      <label>Non nouvo depo</label><input id="d_name" placeholder="Ex: Depo Delma">
+      <button class="primary" onclick="createDepot()">Ajoute depo</button>
+      <div id="depotMsg"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const API = location.origin.includes('4000') ? location.origin : 'http://localhost:4000';
+document.getElementById('apiTag').textContent = 'API: ' + API;
+
+let platformToken = localStorage.getItem('lbp_platform_token') || null;
+let businessToken = localStorage.getItem('lbp_business_token') || null;
+let businessCtx = JSON.parse(localStorage.getItem('lbp_business_ctx') || 'null');
+
+function go(view) {
+  document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+  document.getElementById('view-' + view).classList.remove('hidden');
+  renderNav(view);
+  if (view === 'platform-dashboard') loadPlatformDashboard();
+  if (view === 'business-dashboard') loadBusinessDashboard();
+}
+
+function renderNav(current) {
+  const nav = document.getElementById('topNav');
+  nav.innerHTML = '';
+  const buttons = [];
+  if (platformToken) buttons.push(['platform-dashboard', 'Platform Dashboard']);
+  if (businessToken) buttons.push(['business-dashboard', businessCtx?.business?.name || 'Biznis mwen']);
+  buttons.push(['landing', 'Akèy']);
+  if (platformToken || businessToken) buttons.push(['logout', 'Dekonekte']);
+  buttons.forEach(([id, label]) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.className = id === current ? 'active' : '';
+    b.onclick = () => id === 'logout' ? logout() : go(id);
+    nav.appendChild(b);
+  });
+}
+
+function logout() {
+  platformToken = null; businessToken = null; businessCtx = null;
+  localStorage.removeItem('lbp_platform_token');
+  localStorage.removeItem('lbp_business_token');
+  localStorage.removeItem('lbp_business_ctx');
+  go('landing');
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    method: opts.method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(opts.token ? { 'Authorization': 'Bearer ' + opts.token } : {}),
+    },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ('http_' + res.status));
+  return data;
+}
+
+function showMsg(elId, text, ok) {
+  const el = document.getElementById(elId);
+  el.innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
+}
+
+// ---------- Platform ----------
+async function bootstrapOwner() {
+  try {
+    await api('/api/platform/bootstrap', { method: 'POST', body: {
+      name: val('bs_name'), email: val('bs_email'), password: val('bs_password'),
+    }});
+    showMsg('bootstrapMsg', 'Platform Owner kreye. Konekte anba a.', true);
+  } catch (e) { showMsg('bootstrapMsg', 'Erè: ' + e.message, false); }
+}
+
+async function platformLogin() {
+  try {
+    const data = await api('/api/platform/login', { method: 'POST', body: {
+      email: val('pl_email'), password: val('pl_password'),
+    }});
+    platformToken = data.token;
+    localStorage.setItem('lbp_platform_token', platformToken);
+    go('platform-dashboard');
+  } catch (e) { showMsg('platformLoginMsg', 'Erè: ' + e.message, false); }
+}
+
+async function loadPlatformDashboard() {
+  try {
+    const { businesses } = await api('/api/platform/businesses', { token: platformToken });
+    document.getElementById('businessesTable').innerHTML = businesses.map(b => `
+      <tr>
+        <td>${b.name}</td><td>${b.type}</td>
+        <td><span class="badge ${b.status}">${b.status}</span></td>
+        <td><span class="badge ${b.subscription?.status || 'trialing'}">${b.subscription?.status || '—'}</span></td>
+        <td>
+          ${b.status === 'active'
+            ? `<button class="small" onclick="suspendBiz('${b.id}')">Sispann</button>`
+            : `<button class="small" onclick="reactivateBiz('${b.id}')">Reaktive</button>`}
+        </td>
+      </tr>`).join('') || '<tr><td colspan="5" class="muted">Poko gen biznis.</td></tr>';
+
+    const { plans } = await api('/api/platform/plans');
+    document.getElementById('plansTable').innerHTML = plans.map(p => `
+      <tr><td>${p.name}</td><td>${p.priceHTG}</td><td>${p.billingCycle}</td></tr>
+    `).join('') || '<tr><td colspan="3" class="muted">Poko gen plan.</td></tr>';
+  } catch (e) { console.error(e); }
+}
+
+async function suspendBiz(id) { await api(`/api/platform/businesses/${id}/suspend`, { method: 'POST', token: platformToken }); loadPlatformDashboard(); }
+async function reactivateBiz(id) { await api(`/api/platform/businesses/${id}/reactivate`, { method: 'POST', token: platformToken }); loadPlatformDashboard(); }
+
+async function createPlan() {
+  try {
+    await api('/api/platform/plans', { method: 'POST', token: platformToken, body: {
+      name: val('pln_name'), priceHTG: Number(val('pln_price')), billingCycle: 'monthly',
+    }});
+    showMsg('planMsg', 'Plan kreye.', true);
+    loadPlatformDashboard();
+  } catch (e) { showMsg('planMsg', 'Erè: ' + e.message, false); }
+}
+
+// ---------- Business ----------
+async function businessSignup() {
+  try {
+    const data = await api('/api/businesses/signup', { method: 'POST', body: {
+      businessName: val('su_bizname'), businessType: val('su_biztype'),
+      ownerName: val('su_name'), email: val('su_email'), password: val('su_password'),
+    }});
+    businessToken = data.token;
+    businessCtx = data;
+    localStorage.setItem('lbp_business_token', businessToken);
+    localStorage.setItem('lbp_business_ctx', JSON.stringify(businessCtx));
+    go('business-dashboard');
+  } catch (e) { showMsg('signupMsg', 'Erè: ' + e.message, false); }
+}
+
+async function businessLogin() {
+  try {
+    const data = await api('/api/businesses/login', { method: 'POST', body: {
+      email: val('bl_email'), password: val('bl_password'),
+    }});
+    businessToken = data.token;
+    businessCtx = data;
+    localStorage.setItem('lbp_business_token', businessToken);
+    localStorage.setItem('lbp_business_ctx', JSON.stringify(businessCtx));
+    go('business-dashboard');
+  } catch (e) { showMsg('businessLoginMsg', 'Erè: ' + e.message, false); }
+}
+
+async function loadBusinessDashboard() {
+  document.getElementById('bizNameHeader').textContent = businessCtx.business.name;
+  document.getElementById('bizRoleLine').textContent = `Konekte kòm ${businessCtx.user.name} (${businessCtx.user.role})`;
+  const bid = businessCtx.business.id;
+  try {
+    const { users } = await api(`/api/businesses/${bid}/users`, { token: businessToken });
+    document.getElementById('usersTable').innerHTML = users.map(u => `
+      <tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${u.status}</td></tr>
+    `).join('');
+  } catch (e) { console.error(e); }
+  try {
+    const { depots } = await api(`/api/businesses/${bid}/depots`, { token: businessToken });
+    document.getElementById('depotsTable').innerHTML = depots.map(d => `
+      <tr><td>${d.name}</td><td>${d.isMain ? 'Wi' : 'Non'}</td></tr>
+    `).join('');
+  } catch (e) { console.error(e); }
+}
+
+async function createBusinessUser() {
+  const bid = businessCtx.business.id;
+  try {
+    await api(`/api/businesses/${bid}/users`, { method: 'POST', token: businessToken, body: {
+      name: val('u_name'), email: val('u_email'), password: val('u_password'), role: val('u_role'),
+    }});
+    showMsg('userMsg', 'Itilizatè ajoute.', true);
+    loadBusinessDashboard();
+  } catch (e) { showMsg('userMsg', 'Erè: ' + e.message, false); }
+}
+
+async function createDepot() {
+  const bid = businessCtx.business.id;
+  try {
+    await api(`/api/businesses/${bid}/depots`, { method: 'POST', token: businessToken, body: { name: val('d_name') } });
+    showMsg('depotMsg', 'Depo ajoute.', true);
+    loadBusinessDashboard();
+  } catch (e) { showMsg('depotMsg', 'Erè: ' + e.message, false); }
+}
+
+function val(id) { return document.getElementById(id).value.trim(); }
+
+// ---------- boot ----------
+if (platformToken) go('platform-dashboard');
+else if (businessToken && businessCtx) go('business-dashboard');
+else go('landing');
+</script>
+
+</body>
+</html>
